@@ -3,8 +3,9 @@
 #' Internal function and alternative to \code{lgcp::lgcpPredictSpatioTemporalPlusPars}.
 #'
 #' A copy of \code{lgcp::lgcpPredictSpatioTemporalPlusPars} that parallelises the sampler and
-#' produces a reduced output and lgcpReal object
-.lgcpST <- function (formula, xyt, T, laglength, ZmatList = NULL, model.priors,
+#' produces a reduced output and lgcpReal object. See \code{help(lgcpPredictSpatioTemporalPlusPars)}.
+#' @export
+lgcpST <- function (formula, xyt, T, laglength, ZmatList = NULL, model.priors,
                     model.inits = lgcpInits(), spatial.covmodel, cellwidth = NULL,
                     poisson.offset = NULL, mcmc.control, output.control = setoutput(),
                     gradtrunc = Inf, ext = 2, inclusion = "touching")
@@ -555,7 +556,7 @@ lgcp <- function(data,
                 envir = environment())
 
   pbapply::pboptions(type="none")
-  lg.out <- pbapply::pbsapply(1:8,function(i).lgcpST(formula = form,
+  lg.out <- pbapply::pbsapply(1:8,function(i)lgcpST(formula = form,
                                            xyt = xyt,
                                            T = T,
                                            laglength = laglength-1,
