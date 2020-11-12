@@ -513,7 +513,7 @@ lgcp <- function(data,
         return(val[,pop.var])
       }
 
-      pop <- as.im(popVal,win)
+      pop <- spatstat::as.im(popVal,win)
       vars.est <- lgcp::minimum.contrast.spatiotemporal(data=xyt,
                                                   model="exponential",
                                                   spatial.dens = pop,
