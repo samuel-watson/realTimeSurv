@@ -552,7 +552,7 @@ lgcp <- function(data,
   cat("\nStarting sampling... This may take a long time.\n")
   cl <- parallel::makeCluster(nchains)
   if(!is.null(lib)){
-    parallel::clusterExport(cl,c('lib'))
+    parallel::clusterExport(cl,c('lib'),envir = environment())
     parallel::clusterEvalQ(cl,.libPaths(lib))
   }
   parallel::clusterEvalQ(cl,library(realTimeSurv))
