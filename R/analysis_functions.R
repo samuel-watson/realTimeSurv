@@ -586,7 +586,7 @@ lgcp <- function(data,
                                            ext = 2),
                      cl = cl)
   cat("\nSampling complete at: ",Sys.time())
-  stopCluster(cl)
+  parallel::stopCluster(cl)
 
   if(class(lg.out)[1]=="matrix"){
     eta <- do.call(rbind,lapply(1:8,function(i)return(lg.out[,i]$etarec)))
@@ -628,7 +628,7 @@ lgcp <- function(data,
       N = Owin$N),
     lgprior = lgcp::PriorSpec(lgcp::LogGaussianPrior(mean = colMeans(eta),variance = diag(apply(eta,2,var), 3))),
     INITS = lgcp::lgcpInits(etainit = colMeans(eta),betainit = NULL ),
-    gprior = lgcp::PriorSpec(GaussianPrior(mean = colMeans(beta),variance = diag(apply(beta,2,var),nvar))),
+    gprior = lgcp::PriorSpec(lgcp::GaussianPrior(mean = colMeans(beta),variance = diag(apply(beta,2,var),nvar))),
     formulae = list(form.sp=form.sp,
                     form=form,
                     form.pop=form.pop,
