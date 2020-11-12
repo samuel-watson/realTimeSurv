@@ -380,7 +380,10 @@ lgcp <- function(data,
   if(class(boundary)!="SpatialPolygonsDataFrame")stop("Boundary needs to be of class SpatialPolygonsDataFrame")
   if(class(covariates)!="SpatialPolygonsDataFrame")stop("Covariates needs to be of class SpatialPolygonsDataFrame")
   #if(length(pop.var)!=1)stop("Name one population variable.")
-  requireNamespace(spatstat)
+  if(!require(spatstat)){
+    stop("Please load spatstat library")
+  }
+
   tlim <- c(1,laglength)
   data <- data[data$t %in% c(max(data$t):(max(data$t)-laglength)) ,]
   data$t <- data$t - (max(data$t)-laglength)
