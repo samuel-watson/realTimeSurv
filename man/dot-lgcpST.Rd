@@ -23,5 +23,9 @@
 )
 }
 \description{
-Alternative to lgcpPredictSpatioTemporalPlusPars
+Internal function and alternative to \code{lgcp::lgcpPredictSpatioTemporalPlusPars}.
+}
+\details{
+A copy of \code{lgcp::lgcpPredictSpatioTemporalPlusPars} that parallelises the sampler and
+produces a reduced output and lgcpReal object.
 }

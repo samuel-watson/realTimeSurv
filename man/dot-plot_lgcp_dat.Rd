@@ -17,5 +17,5 @@
 )
 }
 \description{
-Extract data from an lgcpReal object
+Internal function to create plotting data from an lgcpReal object
 }

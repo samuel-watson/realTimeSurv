@@ -1,4 +1,9 @@
 #' Alternative to lgcpPredictSpatioTemporalPlusPars
+#'
+#' Internal function and alternative to \code{lgcp::lgcpPredictSpatioTemporalPlusPars}.
+#'
+#' A copy of \code{lgcp::lgcpPredictSpatioTemporalPlusPars} that parallelises the sampler and
+#' produces a reduced output and lgcpReal object.
 .lgcpST <- function (formula, xyt, T, laglength, ZmatList = NULL, model.priors,
                     model.inits = lgcpInits(), spatial.covmodel, cellwidth = NULL,
                     poisson.offset = NULL, mcmc.control, output.control = setoutput(),

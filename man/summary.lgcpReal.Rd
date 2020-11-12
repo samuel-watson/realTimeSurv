@@ -4,8 +4,20 @@
 \alias{summary.lgcpReal}
 \title{Summarise lgcp output}
 \usage{
-\method{summary}{lgcpReal}(object, linear = TRUE, plot = TRUE, prior = FALSE)
+summary(lg,...)
+}
+\arguments{
+\item{object}{An \code{lgcpReal} object from a call to \code{lgcp}}
+
+\item{linear}{A logical value indicating whether results should be reported on linear or exponential scales}
+
+\item{plot}{A logical value indicating whether to produce plots of the prior and posterior distributions of model parameters}
+
+\item{prior}{A logical value indicating whether to report prior distributions in the summary output}
+}
+\value{
+A table with posterior mean, SD, and quantiles of posterior and prior distributions.
 }
 \description{
-Summarise lgcp output
+Summarise output from a call to \code{lgcp}
 }

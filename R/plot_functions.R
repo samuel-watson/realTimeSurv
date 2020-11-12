@@ -1,4 +1,7 @@
 #' Extract data from an lgcpReal object
+#'
+#' Internal function to create plotting data from an lgcpReal object
+#'
 .plot_lgcp_dat <- function(samps,
                           grid.data,
                           lg,
@@ -98,7 +101,7 @@
 #' Extract MCMC samples from a call to \code{lgcp}
 #'
 #' @param dirname Rootname of the directory in call to \code{lgcp}.
-#' @param nchains Number of chains from call to \code{lgcp}.
+#' @param nchains Integer, number of chains from call to \code{lgcp}.
 #' @return An array of dimension number of gridcells x number of iterations x
 #' number of time periods.
 #' @export
@@ -130,19 +133,19 @@ lgcpExtract <- function(dirname, nchains){
 #'
 #' Plot incidence, model components, and their changes over time.
 #'
-#' @param lg Output from a call to \code{lgcp}
+#' @param lg An lgcpReal object, output from a call to \code{lgcp}
 #' @param covariates A \code{spatialPolygonsDataFrame} covering the area of interest and containing
 #' the covariate and population density data. Typically the same object as specified in the
 #' \code{covariates} argument in the call to \code{lgcp}.
-#' @param osm Whether a map from OpenStreetMap should be included in the plots.
-#' @param per.days The number of person-days to use for incidence, default is 10,000.
+#' @param osm A logical value whether a map from OpenStreetMap should be included in the plots.
+#' @param per.days Integer, the number of person-days to use for incidence, default is 10,000.
 #' @param change.lag If not NULL, then plots are created of the change in outputs compared to
 #' this number of periods prior.
-#' @param relative If change.lag is set, then whether the comparisons should be relative (default),
+#' @param relative A logical value indicating whether the comparisons (if change.lag set) should be relative (default),
 #' i.e. incidence rate ratios and ratios of relative risks, or absolute.
-#' @param msq The denominator of the population density, default is hectares (population per
+#' @param msq Integer, the denominator of the population density, default is hectares (population per
 #' 10,000m^2)
-#' @param rr_lim For plotting the relative risk, the maximum value of the colour scale. Useful
+#' @param rr_lim Integer, for plotting the relative risk, the maximum value of the colour scale. Useful
 #' when comparing multiple plots to put colour gradient on same scale.
 #' @return A list of two ggplot objects. The first is the incidence (or change in incidence) the
 #' second is a plot of four components: (i) the expected case count in each cell, (ii) the
@@ -334,8 +337,73 @@ plot.lgcpReal <- function(lg,
 #' derived from the model; where two variables are used then there are four possible
 #' hotspot classifications, where only one is used then there are two classifications
 #' (above or below the threshold).
+#'
+#' The log-linear model can be divided into a set of multiplicative components:
+#'
+#' (A) population density x (B) size of the area x (C) average disease rate x
+#'          (D) RR observed covariates x (E) RR latent process
+#'
+#' A threshold can be any combination of these factors, or their difference over time.
+#' The user can specify the combination using the labels
+#' (A)x(C) \code{poppp}
+#' (A)x(B)x(C) \code{pop}
+#' (D) \code{obs}
+#' (E) \code{latent}
+#' in the argument to \code{threshold.var} as an additive sum. For example, to specify
+#' the incidence (in person-days) as the variable 'poppp+obs+latent', or to specify
+#' the overall relative risk of an area 'obs+latent'. To difference the variable with
+#' respect to t time periods prior, add '+lag(t)'. So to use the incidence rate ratio
+#' relative to 7 days prior, we can specify 'poppp+obs+latent+lag(7)'. The 'hotspot' is
+#' an area where Pr(variable > threshold) > p.
+#'
+#' Hotspots are labelled in the following way. For a single variable definition, the labels are given
+#' as \code{c(a,b)} where
+#' a = Pr(variable > threshold) <= p
+#' b = Pr(variable > threshold) > p
+#' For a two variable definition the labels are \code{c(a,b,c,d)} where
+#' a = Pr(variable 1 > threshold 1) <= p1 & Pr(variable 2 > threshold 2) <= p2
+#' b = Pr(variable 1 > threshold 1) > p1 & Pr(variable 2 > threshold 2) <= p2
+#' c = Pr(variable 1 > threshold 1) <= p1 & Pr(variable 2 > threshold 2) > p2
+#' d = Pr(variable 1 > threshold 1) > p1 & Pr(variable 2 > threshold 2) > p2
+#' The labels do not need to be unique.
+#'
+#' @param lg Output from a call to \code{lgcp}
+#' @param covariates A \code{spatialPolygonsDataFrame} covering the area of interest and containing
+#' the covariate and population density data. Typically the same object as specified in the
+#' \code{covariates} argument in the call to \code{lgcp}.
+#' @param threshold.var A vector of one or two strings specifying the variables to define the hotspots,
+#' see Details for how to specify.
+#' @param threshold.value A vector or one or two values indicating the threshold(s) for determining
+#' a hotspot. Given in the same order as threshold.var.
+#' @param lables A vector of two or four labels for the hotspots, see Details.
+#' @param threshold.prob A vector of one or two values specifying the exceedence probabilities.
+#' @param relative A logical value. If one or both of the variable is with respect to a previous time period, whether the comparison
+#' should be relative (TRUE) or absolute (FALSE)
+#' @param osm A logical value indicating Whether to include a Open Street Map map under the plot.
+#' @param per.days If one or both of the variables is incidence, the denominator number of person-days.
+#' @param msq The denominator for the population density in m^2. Default is hectares (per 10,000m^2)
+#' @return  An lgcpRealPlot object comprising a list of two ggplot objects.
+#' The first is the hotspot classifications, the second the exceedence probabilities. An object
+#' \code{outl} is exported to the global environment to reduce needing to reload sampling
+#' data on further calls to the same \code{lgcpReal} object. This can be removed if needed as
+#' it can be large.
+#' @examples
+#' p1 <- plot_hotspot(lg,
+#'                    covariates=lsoa,
+#'                    threshold.var=c('poppp+obs+latent'),
+#'                    threshold.value = c(1),
+#'                    labels = c('low','high'),
+#'                    osm = TRUE)
+#'
+#' p2 <- plot_hotspot(lg,
+#'                    covariates=lsoa,
+#'                    threshold.var=c('poppp+obs+latent','poppp+obs+latent+lag(7)'),
+#'                    threshold.value = c(1,1.5),
+#'                    labels = c('low','high','rising','both'),
+#'                    threshold.prob=0.5,
+#'                    osm = TRUE)
 #' @export
-plot_hotspot <- function(lg1,
+plot_hotspot <- function(lg,
                          covariates,
                          threshold.var=NULL,
                          threshold.value=NULL,
@@ -353,14 +421,14 @@ plot_hotspot <- function(lg1,
     relative <- c(relative,relative)
   }
 
-  OW <- lgcp::selectObsWindow(lg1$xyt, cellwidth = lg1$cellwidth)
+  OW <- lgcp::selectObsWindow(lg$xyt, cellwidth = lg$cellwidth)
   grid.data <- expand.grid(x=OW$xvals,y=OW$yvals)
   idx.mapping <- matrix(1:nrow(grid.data),nrow=length(OW$yvals),ncol=length(OW$xvals))
   idx.mapping <- c(t(apply(idx.mapping,2,rev)))
 
-  if(!exists("outl") |(exists("outl")&&attr(outl, "dirname")!=lg1$dirname)){
+  if(!exists("outl") |(exists("outl")&&attr(outl, "dirname")!=lg$dirname)){
     print("Extracting posterior samples...")
-    outl <- lgcpExtract(lg1$dirname,nrow(lg1$lgcpRunInfo$timetaken))
+    outl <- lgcpExtract(lg$dirname,nrow(lg$lgcpRunInfo$timetaken))
     assign("outl",outl,.GlobalEnv)
   }
 
@@ -375,8 +443,8 @@ plot_hotspot <- function(lg1,
 
   res1 <- .plot_lgcp_dat(outl,
                         grid.data,
-                        lg1,
-                        lg1$nchains,
+                        lg,
+                        lg$nchains,
                         idx.mapping,
                         covariates = covariates,
                         data.out = TRUE)
@@ -389,7 +457,7 @@ plot_hotspot <- function(lg1,
   if(any(str1=="poppp")){
     cent <- sp::coordinates(rgeos::gCentroid(covariates))
     area <- cos(cent[2]*pi/180)*
-      111*1000^2*111.321*lg1$cellwidth^2/msq
+      111*1000^2*111.321*lg$cellwidth^2/msq
     mult <- per.days/(res1$dat1$pop*area)
     v0x <- sapply(1:nrow(res1$pop),function(i) return(res1$pop[i,]*mult[i]))
     v0 <- v0*t(v0x)
@@ -405,8 +473,8 @@ plot_hotspot <- function(lg1,
   if(lag1>0){
     res2 <- .plot_lgcp_dat(outl,
                           grid.data,
-                          lg1,
-                          lg1$nchains,
+                          lg,
+                          lg$nchains,
                           idx.mapping,
                           covariates = covariates,
                           plotlag = lag1,
@@ -447,8 +515,8 @@ plot_hotspot <- function(lg1,
 
     res3 <- .plot_lgcp_dat(outl,
                           grid.data,
-                          lg1,
-                          lg1$nchains,
+                          lg,
+                          lg$nchains,
                           idx.mapping,
                           covariates = covariates,
                           data.out = TRUE)
@@ -461,7 +529,7 @@ plot_hotspot <- function(lg1,
     if(any(str2=="poppp")){
       cent <- sp::coordinates(rgeos::gCentroid(covariates))
       area <- cos(cent[2]*pi/180)*
-        111*1000^2*111.321*lg1$cellwidth^2/msq
+        111*1000^2*111.321*lg$cellwidth^2/msq
       mult <- per.days/(res3$dat1$pop*area)
       v1x <- sapply(1:nrow(res3$pop),function(i) return(res3$pop[i,]*mult[i]))
       v1 <- v1*t(v1x)
@@ -476,8 +544,8 @@ plot_hotspot <- function(lg1,
     if(lag2>0){
       res4 <- .plot_lgcp_dat(outl,
                             grid.data,
-                            lg1,
-                            lg1$nchains,
+                            lg,
+                            lg$nchains,
                             idx.mapping,
                             covariates = covariates,
                             plotlag = lag2,
@@ -624,12 +692,27 @@ plot_hotspot <- function(lg1,
 }
 
 #' (Re-)Plot lgcpRealPlot objects
+#'
+#' Plot lgcpRealPlot output from plot, plot_hotspot, aggregator.
+#'
+#' @param obj Output from a previous call to plotting functions
+#' @examples
+#' plot(p1)
 #' @export
 plot.lgcpRealPlot <- function(obj){
   return(ggpubr::ggarrange(obj[[1]],obj[[2]],nrow=1))
 }
 
 #' Summarise lgcp output
+#'
+#' Summarise output from a call to \code{lgcp}
+#'
+#' @usage summary(lg,...)
+#' @param object An \code{lgcpReal} object from a call to \code{lgcp}
+#' @param linear A logical value indicating whether results should be reported on linear or exponential scales
+#' @param plot A logical value indicating whether to produce plots of the prior and posterior distributions of model parameters
+#' @param prior A logical value indicating whether to report prior distributions in the summary output
+#' @return A table with posterior mean, SD, and quantiles of posterior and prior distributions.
 #' @export
 summary.lgcpReal <- function(object,linear=TRUE,plot=TRUE,prior=FALSE){
   rown <- c("Mean","SD","2.5%","10%","25%","50%","75%","90%","97.5%")
@@ -868,6 +951,19 @@ summary_html <- function(object,linear=TRUE){
 }
 
 #' Aggregate lgcp output to larger geography
+#'
+#' Take a lgcpRealPlot object and aggregates the output to a larger geography specified by a \code{spatialPolygons} object.
+#'
+#' This function provides a way of producing aggregated model output for larger geographies. The model fitting takes place on
+#' a fine regular lattice, this function provides a way to aggregate this to non-regular polygons such as administrative or
+#' political boundaries.
+#'
+#' @usage aggregator(lg,lsoa,...)
+#' @param obj An lgcpRealPlot produced by \code{plot} or \code{plot_hotspot}. NOTE: the call \code{plot} or \code{plot_hotspot} must have
+#' had \code{osm=FALSE} set to work with this function.
+#' @param aggpoly A \code{spatialPolygons} or \code{spatialPolygonsDataFrame} object specifying the geography to aggregate to.
+#' @param osm A logical value indicating whether to overlay the plot on an OpenStreetMap map
+#' @return An lgcpRealPlot object comprising a list of two ggplot objects.
 #' @export
 aggregator <- function(obj,aggpoly,osm=FALSE){
   if(!(class(aggpoly)=="SpatialPolygons"|class(aggpoly)=="SpatialPolygonsDataFrame"))
@@ -1096,7 +1192,12 @@ aggregator <- function(obj,aggpoly,osm=FALSE){
 
 }
 
-#' Alternative to \code{ggmap}'s \code{get_map} function
+#' Alternative \code{get_map} function
+#'
+#' An alternative to \code{ggmap}'s \code{get_map} function
+#'
+#' An error in the CRAN available version of get_map means it will only plot Google Maps objects rather than Stamen or OSM maps. When ggmap is
+#' updated this function will be removed. See \code{help(get_map)} for details.
 #' @export
 get_map2 <- function (location = c(lon = -95.3632715, lat = 29.7632836),
                       zoom = "auto", scale = "auto", maptype = c("terrain",

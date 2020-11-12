@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_functions.R
 \name{get_map2}
 \alias{get_map2}
-\title{Alternative to \code{ggmap}'s \code{get_map} function}
+\title{Alternative \code{get_map} function}
 \usage{
 get_map2(
   location = c(lon = -95.3632715, lat = 29.7632836),
@@ -23,5 +23,9 @@ get_map2(
 )
 }
 \description{
-Alternative to \code{ggmap}'s \code{get_map} function
+An alternative to \code{ggmap}'s \code{get_map} function
+}
+\details{
+An error in the CRAN available version of get_map means it will only plot Google Maps objects rather than Stamen or OSM maps. When ggmap is
+updated this function will be removed. See \code{help(get_map)} for details.
 }

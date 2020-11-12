@@ -6,6 +6,12 @@
 \usage{
 \method{plot}{lgcpRealPlot}(obj)
 }
+\arguments{
+\item{obj}{Output from a previous call to plotting functions}
+}
 \description{
-(Re-)Plot lgcpRealPlot objects
+Plot lgcpRealPlot output from plot, plot_hotspot, aggregator.
+}
+\examples{
+plot(p1)
 }

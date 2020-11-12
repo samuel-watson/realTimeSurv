@@ -5,7 +5,7 @@
 \title{Hotspot mapping and visualisation}
 \usage{
 plot_hotspot(
-  lg1,
+  lg,
   covariates,
   threshold.var = NULL,
   threshold.value = NULL,
@@ -17,6 +17,39 @@ plot_hotspot(
   msq = 10000
 )
 }
+\arguments{
+\item{lg}{Output from a call to \code{lgcp}}
+
+\item{covariates}{A \code{spatialPolygonsDataFrame} covering the area of interest and containing
+the covariate and population density data. Typically the same object as specified in the
+\code{covariates} argument in the call to \code{lgcp}.}
+
+\item{threshold.var}{A vector of one or two strings specifying the variables to define the hotspots,
+see Details for how to specify.}
+
+\item{threshold.value}{A vector or one or two values indicating the threshold(s) for determining
+a hotspot. Given in the same order as threshold.var.}
+
+\item{threshold.prob}{A vector of one or two values specifying the exceedence probabilities.}
+
+\item{relative}{A logical value. If one or both of the variable is with respect to a previous time period, whether the comparison
+should be relative (TRUE) or absolute (FALSE)}
+
+\item{osm}{A logical value indicating Whether to include a Open Street Map map under the plot.}
+
+\item{per.days}{If one or both of the variables is incidence, the denominator number of person-days.}
+
+\item{msq}{The denominator for the population density in m^2. Default is hectares (per 10,000m^2)}
+
+\item{lables}{A vector of two or four labels for the hotspots, see Details.}
+}
+\value{
+An lgcpRealPlot object comprising a list of two ggplot objects.
+The first is the hotspot classifications, the second the exceedence probabilities. An object
+\code{outl} is exported to the global environment to reduce needing to reload sampling
+data on further calls to the same \code{lgcpReal} object. This can be removed if needed as
+it can be large.
+}
 \description{
 A function for mapping hotspots according to user defined criteria.
 }
@@ -26,4 +59,49 @@ probability of at least p. The criterion can be a function of one or two variabl
 derived from the model; where two variables are used then there are four possible
 hotspot classifications, where only one is used then there are two classifications
 (above or below the threshold).
+
+The log-linear model can be divided into a set of multiplicative components:
+
+(A) population density x (B) size of the area x (C) average disease rate x
+(D) RR observed covariates x (E) RR latent process
+
+A threshold can be any combination of these factors, or their difference over time.
+The user can specify the combination using the labels
+(A)x(C) \code{poppp}
+(A)x(B)x(C) \code{pop}
+(D) \code{obs}
+(E) \code{latent}
+in the argument to \code{threshold.var} as an additive sum. For example, to specify
+the incidence (in person-days) as the variable 'poppp+obs+latent', or to specify
+the overall relative risk of an area 'obs+latent'. To difference the variable with
+respect to t time periods prior, add '+lag(t)'. So to use the incidence rate ratio
+relative to 7 days prior, we can specify 'poppp+obs+latent+lag(7)'. The 'hotspot' is
+an area where Pr(variable > threshold) > p.
+
+Hotspots are labelled in the following way. For a single variable definition, the labels are given
+as \code{c(a,b)} where
+a = Pr(variable > threshold) <= p
+b = Pr(variable > threshold) > p
+For a two variable definition the labels are \code{c(a,b,c,d)} where
+a = Pr(variable 1 > threshold 1) <= p1 & Pr(variable 2 > threshold 2) <= p2
+b = Pr(variable 1 > threshold 1) > p1 & Pr(variable 2 > threshold 2) <= p2
+c = Pr(variable 1 > threshold 1) <= p1 & Pr(variable 2 > threshold 2) > p2
+d = Pr(variable 1 > threshold 1) > p1 & Pr(variable 2 > threshold 2) > p2
+The labels do not need to be unique.
+}
+\examples{
+p1 <- plot_hotspot(lg,
+                   covariates=lsoa,
+                   threshold.var=c('poppp+obs+latent'),
+                   threshold.value = c(1),
+                   labels = c('low','high'),
+                   osm = TRUE)
+
+p2 <- plot_hotspot(lg,
+                   covariates=lsoa,
+                   threshold.var=c('poppp+obs+latent','poppp+obs+latent+lag(7)'),
+                   threshold.value = c(1,1.5),
+                   labels = c('low','high','rising','both'),
+                   threshold.prob=0.5,
+                   osm = TRUE)
 }

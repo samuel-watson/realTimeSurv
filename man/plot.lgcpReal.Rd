@@ -16,26 +16,26 @@
 )
 }
 \arguments{
-\item{lg}{Output from a call to \code{lgcp}}
+\item{lg}{An lgcpReal object, output from a call to \code{lgcp}}
 
 \item{covariates}{A \code{spatialPolygonsDataFrame} covering the area of interest and containing
 the covariate and population density data. Typically the same object as specified in the
 \code{covariates} argument in the call to \code{lgcp}.}
 
-\item{osm}{Whether a map from OpenStreetMap should be included in the plots.}
+\item{osm}{A logical value whether a map from OpenStreetMap should be included in the plots.}
 
-\item{per.days}{The number of person-days to use for incidence, default is 10,000.}
+\item{per.days}{Integer, the number of person-days to use for incidence, default is 10,000.}
 
 \item{change.lag}{If not NULL, then plots are created of the change in outputs compared to
 this number of periods prior.}
 
-\item{relative}{If change.lag is set, then whether the comparisons should be relative (default),
+\item{relative}{A logical value indicating whether the comparisons (if change.lag set) should be relative (default),
 i.e. incidence rate ratios and ratios of relative risks, or absolute.}
 
-\item{msq}{The denominator of the population density, default is hectares (population per
+\item{msq}{Integer, the denominator of the population density, default is hectares (population per
 10,000m^2)}
 
-\item{rr_lim}{For plotting the relative risk, the maximum value of the colour scale. Useful
+\item{rr_lim}{Integer, for plotting the relative risk, the maximum value of the colour scale. Useful
 when comparing multiple plots to put colour gradient on same scale.}
 }
 \value{

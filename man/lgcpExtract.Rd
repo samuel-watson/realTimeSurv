@@ -9,7 +9,7 @@ lgcpExtract(dirname, nchains)
 \arguments{
 \item{dirname}{Rootname of the directory in call to \code{lgcp}.}
 
-\item{nchains}{Number of chains from call to \code{lgcp}.}
+\item{nchains}{Integer, number of chains from call to \code{lgcp}.}
 }
 \value{
 An array of dimension number of gridcells x number of iterations x

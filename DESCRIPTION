@@ -25,6 +25,7 @@ Imports:
     ggplot2,
     ggmap,
     ggpubr,
+    geoR,
     knitr,
     reshape2,
     kableExtra,
