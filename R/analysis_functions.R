@@ -321,7 +321,7 @@ mincontrast_st <- function(data,covariates,boundary){
   vars.est <- lgcp::minimum.contrast.spatiotemporal(data=xyt,
                                               model="exponential",
                                               spatial.dens = pop,
-                                              temporal.intens = muEst(xyt))
+                                              temporal.intens = lgcp::muEst(xyt))
   return(vars.est$estimates)
 }
 
@@ -517,11 +517,11 @@ lgcp <- function(data,
       vars.est <- lgcp::minimum.contrast.spatiotemporal(data=xyt,
                                                   model="exponential",
                                                   spatial.dens = pop,
-                                                  temporal.intens = muEst(xyt))
+                                                  temporal.intens = lgcp::muEst(xyt))
     } else {
       vars.est <- lgcp::minimum.contrast.spatiotemporal(data=xyt,
                                                   model="exponential",
-                                                  temporal.intens = muEst(xyt))
+                                                  temporal.intens = lgcp::muEst(xyt))
     }
 
 
