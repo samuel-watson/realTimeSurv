@@ -3,7 +3,7 @@
 #' Internal function and alternative to \code{lgcp::lgcpPredictSpatioTemporalPlusPars}.
 #'
 #' A copy of \code{lgcp::lgcpPredictSpatioTemporalPlusPars} that parallelises the sampler and
-#' produces a reduced output and lgcpReal object.
+#' produces a reduced output and lgcpReal object
 .lgcpST <- function (formula, xyt, T, laglength, ZmatList = NULL, model.priors,
                     model.inits = lgcpInits(), spatial.covmodel, cellwidth = NULL,
                     poisson.offset = NULL, mcmc.control, output.control = setoutput(),
@@ -380,7 +380,7 @@ lgcp <- function(data,
   if(class(boundary)!="SpatialPolygonsDataFrame")stop("Boundary needs to be of class SpatialPolygonsDataFrame")
   if(class(covariates)!="SpatialPolygonsDataFrame")stop("Covariates needs to be of class SpatialPolygonsDataFrame")
   #if(length(pop.var)!=1)stop("Name one population variable.")
-  requireNameSpace(spatstat)
+  requireNamespace(spatstat)
   tlim <- c(1,laglength)
   data <- data[data$t %in% c(max(data$t):(max(data$t)-laglength)) ,]
   data$t <- data$t - (max(data$t)-laglength)
