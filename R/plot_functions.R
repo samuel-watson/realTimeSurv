@@ -156,7 +156,7 @@ lgcpExtract <- function(dirname, nchains){
 #' it can be large.
 #' @seealso aggregator, plot_hotspot, generate_report
 #' @importFrom ggplot2 ggplot aes geom_raster theme theme_bw element_blank scale_fill_viridis_c scale_fill_viridis_d
-#' @importFrom ggplot2 scale_fill_gradientn ggtitle coord_equal element_rect geom_tile facet_wrap
+#' @importFrom ggplot2 scale_fill_gradientn ggtitle coord_equal element_rect geom_tile facet_wrap geom_point geom_path
 #' @export
 plot.lgcpReal <- function(lg,
                           covariates,
