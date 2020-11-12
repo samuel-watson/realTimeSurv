@@ -379,17 +379,13 @@ lgcp <- function(data,
   if(class(data)!="data.frame"|any(!colnames(data)%in%c('x','y','t')))stop("Data needs to be a data frame with columns x,y, and t")
   if(class(boundary)!="SpatialPolygonsDataFrame")stop("Boundary needs to be of class SpatialPolygonsDataFrame")
   if(class(covariates)!="SpatialPolygonsDataFrame")stop("Covariates needs to be of class SpatialPolygonsDataFrame")
-  #if(length(pop.var)!=1)stop("Name one population variable.")
-  if(!require(spatstat)){
-    stop("Please load spatstat library")
-  }
 
   tlim <- c(1,laglength)
   data <- data[data$t %in% c(max(data$t):(max(data$t)-laglength)) ,]
   data$t <- data$t - (max(data$t)-laglength)
   data <- data[data$t%in%c(tlim[1]:tlim[2]),]
 
-  win <- as.owin.SpatialPolygons(boundary)
+  win <- maptools::as.owin.SpatialPolygons(boundary)
 
   xyt <- lgcp::stppp(list(data = data, tlim = tlim, window = win))
   Owin <- lgcp::selectObsWindow(xyt,cellwidth)
