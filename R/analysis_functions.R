@@ -361,6 +361,7 @@ mincontrast_st <- function(data,covariates,boundary){
 #' @param mala.pars Parameters for the MCMC sampler. A vector of three numbers: the total number
 #' of iterations, the number of warmup iterations, and the number to thin.
 #' @param nchains The number of MCMC chains, default is \code{parallel::detectCores()}
+#' @param lib Library location if not the default, otherwise NULL
 #' @return An object of class lgcpReal
 #' @export
 lgcp <- function(data,
@@ -375,7 +376,8 @@ lgcp <- function(data,
                  dirname,
                  prevRun=NULL,
                  mala.pars=c(26250,20000,50),
-                 nchains=parallel::detectCores()){
+                 nchains=parallel::detectCores(),
+                 lib=NULL){
 
   if(class(data)!="data.frame"|any(!colnames(data)%in%c('x','y','t')))stop("Data needs to be a data frame with columns x,y, and t")
   if(class(boundary)!="SpatialPolygonsDataFrame")stop("Boundary needs to be of class SpatialPolygonsDataFrame")
@@ -549,8 +551,12 @@ lgcp <- function(data,
   ## parellise
   cat("\nStarting sampling... This may take a long time.\n")
   cl <- parallel::makeCluster(nchains)
-  parallel::clusterEvalQ(cl,require(lgcp))
-  parallel::clusterEvalQ(cl,require(realTimeSurv))
+  if(!is.null(lib)){
+    parallel::clusterExport(cl,c('lib'))
+    parallel::clusterEvalQ(cl,.libPaths(lib))
+  }
+  parallel::clusterEvalQ(cl,library(realTimeSurv))
+  parallel::clusterEvalQ(cl,library(lgcp))
   parallel::clusterExport(cl,c('form','xyt','T','laglength','Zmat','priors','INITS',
                      'CF','cellwidth','dirname','mala.pars',"offsetList"),
                 envir = environment())
