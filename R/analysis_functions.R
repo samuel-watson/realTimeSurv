@@ -543,7 +543,7 @@ lgcp <- function(data,
     priors <- prevRun
   }
 
-  CF <- lgcp::CovFunction(exponentialCovFct)
+  CF <- lgcp::CovFunction(lgcp::exponentialCovFct)
 
   ## parellise
   cat("\nStarting sampling... This may take a long time.\n")
