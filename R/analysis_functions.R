@@ -313,8 +313,8 @@ mincontrast_st <- function(data,covariates,boundary){
     val <- sp::over(spp,covariates)
     return(val[,"popdens"])
   }
-  win <- as.owin.SpatialPolygons(boundary)
-  pop <- as.im(popVal,win)
+  win <- maptools::as.owin.SpatialPolygons(boundary)
+  pop <- spatstat::as.im(popVal,win)
 
 
   xyt <- lgcp::stppp(list(data = data, tlim = range(data$t), window = win))
@@ -504,7 +504,7 @@ lgcp <- function(data,
   }
 
   if(is.null(prevRun)){
-    gprior <- lgcp::PriorSpec(GaussianPrior(mean = rep(0,nvar),variance = diag(rep(25,nvar),nvar)))
+    gprior <- lgcp::PriorSpec(lgcp::GaussianPrior(mean = rep(0,nvar),variance = diag(rep(25,nvar),nvar)))
     if(!is.null(pop.var)){
       popVal <- function(x,y){
         spp <- sp::SpatialPoints(data.frame(x=x,y=y))
