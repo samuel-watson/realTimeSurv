@@ -549,8 +549,9 @@ lgcp <- function(data,
   cat("\nStarting sampling... This may take a long time.\n")
   cl <- parallel::makeCluster(nchains)
   parallel::clusterEvalQ(cl,require(lgcp))
+  parallel::clusterEvalQ(cl,require(realTimeSurv))
   parallel::clusterExport(cl,c('form','xyt','T','laglength','Zmat','priors','INITS',
-                     'CF','cellwidth','dirname','mala.pars',"offsetList",".lgcpST"),
+                     'CF','cellwidth','dirname','mala.pars',"offsetList"),
                 envir = environment())
 
   pbapply::pboptions(type="none")
