@@ -1,6 +1,6 @@
 Package: realTimeSurv
 Title: Real Time Surveillance Using Geospatial Statistical Modelling
-Version: 0.0.0.9005
+Version: 0.0.0.9006
 Authors@R: 
     person(given = "Sam",
            family = "Watson",
@@ -25,6 +25,7 @@ Imports:
     ggplot2,
     ggmap,
     ggpubr,
+    googleway,
     geoR,
     knitr,
     reshape2,
