@@ -358,13 +358,21 @@ plot.lgcpReal <- function(lg,
 #'
 #' Hotspots are labelled in the following way. For a single variable definition, the labels are given
 #' as \code{c(a,b)} where
+#'
 #' a = Pr(variable > threshold) <= p
+#'
 #' b = Pr(variable > threshold) > p
+#'
 #' For a two variable definition the labels are \code{c(a,b,c,d)} where
+#'
 #' a = Pr(variable 1 > threshold 1) <= p1 & Pr(variable 2 > threshold 2) <= p2
+#'
 #' b = Pr(variable 1 > threshold 1) > p1 & Pr(variable 2 > threshold 2) <= p2
+#'
 #' c = Pr(variable 1 > threshold 1) <= p1 & Pr(variable 2 > threshold 2) > p2
+#'
 #' d = Pr(variable 1 > threshold 1) > p1 & Pr(variable 2 > threshold 2) > p2
+#'
 #' The labels do not need to be unique.
 #'
 #' @param lg Output from a call to \code{lgcp}
@@ -734,9 +742,9 @@ summary.lgcpReal <- function(object,linear=TRUE,plot=TRUE,prior=FALSE){
   rownames(ans) <- labs
   colnames(ans) <- rown
   cat("Summary for model\n")
-  hrs <- floor(mean(object$lgcpRunInfo$timetaken))
-  mins <- round((mean(object$lgcpRunInfo$timetaken)%%1)*60,0)
-  cat("Average running time: ",hrs," hours ",mins," minutes\n")
+  hrs <- floor(max(object$lgcpRunInfo$timetaken))
+  mins <- round((max(object$lgcpRunInfo$timetaken)%%1)*60,0)
+  cat("Running time: ",hrs," hours ",mins," minutes\n")
   cat("Number of chains: ",nrow(object$lgcpRunInfo$timetaken),"\n")
   cat("\n---------------------------------------------------------------------------------\n
         Posterior samples:\n")
@@ -803,7 +811,7 @@ summary.lgcpReal <- function(object,linear=TRUE,plot=TRUE,prior=FALSE){
 
   if(plot){
     niter <- nrow(object$beta)
-    betadf <- reshape2::melt(lg0$beta)
+    betadf <- reshape2::melt(object$beta)
     betadf$post <- "Posterior"
     betadf2 <- reshape2::melt(sapply(1:ncol(object$beta),
                                      function(i)rnorm(niter,
@@ -825,7 +833,7 @@ summary.lgcpReal <- function(object,linear=TRUE,plot=TRUE,prior=FALSE){
       scale_color_discrete(name="")+
       ggtitle("Beta parameters")
 
-    etadf <- reshape2::melt(lg0$eta)
+    etadf <- reshape2::melt(object$eta)
     etadf$post <- "Posterior"
     etadf2 <- reshape2::melt(sapply(1:ncol(object$eta),
                                     function(i)rnorm(niter,
@@ -901,7 +909,7 @@ summary_html <- function(object,linear=TRUE){
   }
 
   niter <- nrow(object$beta)
-  betadf <- reshape2::melt(lg0$beta)
+  betadf <- reshape2::melt(object$beta)
   betadf$post <- "Posterior"
   betadf2 <- reshape2::melt(sapply(1:ncol(object$beta),
                                    function(i)rnorm(niter,
@@ -923,7 +931,7 @@ summary_html <- function(object,linear=TRUE){
     scale_color_discrete(name="")+
     ggtitle("Beta parameters")
 
-  etadf <- reshape2::melt(lg0$eta)
+  etadf <- reshape2::melt(object$eta)
   etadf$post <- "Posterior"
   etadf2 <- reshape2::melt(sapply(1:ncol(object$eta),
                                   function(i)rnorm(niter,

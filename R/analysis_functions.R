@@ -1,3 +1,59 @@
+#' Generate geocoded and time-stamped data
+#'
+#' Use Google Maps API to produce longitude and latitude data
+#'
+#' A wrapper to functions from package \code{googleway} that checks for errors and
+#' fetches longitude and latitude coordinates using the Google Maps API. Dates are converted
+#' to integer values with t=1 being the earliest date provided.
+#' @param df A data frame containing columns with the address (either "Address" or "address") and date (either "Date" or "date")
+#' of the cases.
+#' @param api_key A string. A valid Google Developers Geocode API key.
+#' @return A data frame with the columns for longitude, latitude, and time.
+#' @examples
+#' tmp <- data.frame(address=c("Buckingham palace","Big ben, Westminster","Marble arch, London"),
+#' date = c("01/01/2020","02/01/2020","03/01/2020"))
+#' geocode_st(tmp, api_key = "ENTER_KEY")
+#' @export
+geocode_st <- function(df,api_key){
+  if(!"address"%in%tolower(colnames(df)))stop("Column name for addresses should be 'Address' or 'address'")
+  if(!"date"%in%tolower(colnames(df)))stop("Column name for dates should be 'Date' or 'date'")
+
+  addrs <- df[,which(tolower(colnames(df))=="address")]
+  addrs <- as.character(addrs)
+  dts <- df[,which(tolower(colnames(df))=="date")]
+  dts <- lubridate::dmy(dts)
+  dts <- as.numeric(dts)
+  dts <- dts - (min(dts)-1)
+
+  data <- data.frame(lat=rep(NA,nrow(df)),
+                     long=rep(NA,nrow(df)),
+                     t=dts)
+
+  cat("\nProcessing addresses...\n")
+  nmat <- 0
+  nnomat <- 0
+  for(i in 1:length(addrs)){
+
+    if(addrs[i]!="NULL"){
+      add <- tryCatch(googleway::geocode_coordinates(googleway::google_geocode(addrs[i], key=api_key)),
+                      error = function(e)NA)
+      if(length(add)>1){
+        data$lat[i] <- add$lat[1]
+        data$long[i] <- add$lng[1]
+        nmat <- nmat + 1
+      } else {
+        nnomat <- nnomat + 1
+      }
+    }
+    cat("\rAddresses: ",nmat," matched; ",nnomat," unable to match, of ",length(addrs)," total.");flush.console()
+  }
+
+  return(data)
+}
+
+
+
+
 #' Alternative to lgcpPredictSpatioTemporalPlusPars
 #'
 #' Internal function and alternative to \code{lgcp::lgcpPredictSpatioTemporalPlusPars}.
@@ -996,6 +1052,7 @@ convergence <- function(lg){
 #' of samples. This object is large so remove if no further analysis required.
 #' @export
 vpc <- function(lg,covariates,rr=FALSE){
+  if(is.null(covariates))stop("Please specify covariates.")
   OW <- lgcp::selectObsWindow(lg$xyt, cellwidth = lg$cellwidth)
   grid.data <- expand.grid(x=OW$xvals,y=OW$yvals)
   idx.mapping <- matrix(1:nrow(grid.data),nrow=length(OW$yvals),ncol=length(OW$xvals))
