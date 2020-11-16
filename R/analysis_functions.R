@@ -11,7 +11,7 @@
 #' @return A data frame with the columns for longitude, latitude, and time.
 #' @examples
 #' tmp <- data.frame(address=c("Buckingham palace","Big ben, Westminster","Marble arch, London"),
-#' date = c("01/01/2020","02/01/2020","03/01/2020"))
+#'                   date = c("01/01/2020","02/01/2020","03/01/2020"))
 #' geocode_st(tmp, api_key = "ENTER_KEY")
 #' @export
 geocode_st <- function(df,api_key){
@@ -51,6 +51,30 @@ geocode_st <- function(df,api_key){
   return(data)
 }
 
+#' Get day of the week
+#'
+#' Returns a data frame with day of the week covariates
+#' @param df A data frame containing columns with the address (either "Address" or "address") and date (either "Date" or "date")
+#' of the cases. Typically the same data frame used in a call to \code{geocode_st}
+#' @return A data frame with value for time period and day of the week.
+#' @examples
+#' tmp <- data.frame(address=c("Buckingham palace","Big ben, Westminster","Marble arch, London"),
+#'                   date = c("01/01/2020","02/01/2020","03/01/2020"))
+#' get_day(tmp)
+#' @export
+get_day <- function(df){
+  if(!"date"%in%tolower(colnames(df)))stop("Column name for dates should be 'Date' or 'date'")
+
+  dts <- df[,which(tolower(colnames(df))=="date")]
+  dts <- lubridate::dmy(dts)
+  dts2 <- as.numeric(dts)
+  dts2 <- dts2 - (min(dts2)-1)
+
+  data_t <- data.frame(t = min(dts2):max(dts2),
+                       day = lubridate::wday(lubridate::ymd(seq(min(dts),max(dts),by=1)),label=TRUE))
+
+  return(data_t)
+}
 
 
 
