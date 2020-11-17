@@ -4,15 +4,15 @@
 \alias{aggregator}
 \title{Aggregate lgcp output to larger geography}
 \usage{
-aggregator(lg,lsoa,...)
+aggregator(lg, aggpoly, osm = FALSE)
 }
 \arguments{
-\item{obj}{An lgcpRealPlot produced by \code{plot} or \code{plot_hotspot}. NOTE: the call \code{plot} or \code{plot_hotspot} must have
-had \code{osm=FALSE} set to work with this function.}
-
 \item{aggpoly}{A \code{spatialPolygons} or \code{spatialPolygonsDataFrame} object specifying the geography to aggregate to.}
 
 \item{osm}{A logical value indicating whether to overlay the plot on an OpenStreetMap map}
+
+\item{obj}{An lgcpRealPlot produced by \code{plot} or \code{plot_hotspot}. NOTE: the call \code{plot} or \code{plot_hotspot} must have
+had \code{osm=FALSE} set to work with this function.}
 }
 \value{
 An lgcpRealPlot object comprising a list of two ggplot objects.

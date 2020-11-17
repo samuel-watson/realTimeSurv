@@ -17,7 +17,8 @@ lgcp(
   dirname,
   prevRun = NULL,
   mala.pars = c(26250, 20000, 50),
-  nchains = parallel::detectCores()
+  nchains = parallel::detectCores(),
+  lib = NULL
 )
 }
 \arguments{
@@ -56,6 +57,8 @@ to use posterior distributions from previous period, or a call to \code{lgcp::lg
 of iterations, the number of warmup iterations, and the number to thin.}
 
 \item{nchains}{The number of MCMC chains, default is \code{parallel::detectCores()}}
+
+\item{lib}{Library location if not the default, otherwise NULL}
 }
 \value{
 An object of class lgcpReal

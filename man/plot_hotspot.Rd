@@ -80,13 +80,21 @@ an area where Pr(variable > threshold) > p.
 
 Hotspots are labelled in the following way. For a single variable definition, the labels are given
 as \code{c(a,b)} where
+
 a = Pr(variable > threshold) <= p
+
 b = Pr(variable > threshold) > p
+
 For a two variable definition the labels are \code{c(a,b,c,d)} where
+
 a = Pr(variable 1 > threshold 1) <= p1 & Pr(variable 2 > threshold 2) <= p2
+
 b = Pr(variable 1 > threshold 1) > p1 & Pr(variable 2 > threshold 2) <= p2
+
 c = Pr(variable 1 > threshold 1) <= p1 & Pr(variable 2 > threshold 2) > p2
+
 d = Pr(variable 1 > threshold 1) > p1 & Pr(variable 2 > threshold 2) > p2
+
 The labels do not need to be unique.
 }
 \examples{

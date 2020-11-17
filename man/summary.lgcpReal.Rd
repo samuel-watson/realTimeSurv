@@ -4,7 +4,7 @@
 \alias{summary.lgcpReal}
 \title{Summarise lgcp output}
 \usage{
-summary(lg,...)
+\method{summary}{lgcpReal}(object, linear = TRUE, plot = TRUE, prior = FALSE)
 }
 \arguments{
 \item{object}{An \code{lgcpReal} object from a call to \code{lgcp}}
