@@ -729,6 +729,8 @@ lgcp <- function(data,
 }
 
 #' Report generating function
+#'
+#' To be completed
 #' @export
 generateReport <- function(lg,
                            plot.opts=list(),

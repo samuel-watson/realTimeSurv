@@ -715,7 +715,6 @@ plot.lgcpRealPlot <- function(obj){
 #'
 #' Summarise output from a call to \code{lgcp}
 #'
-#' @usage summary(lg,...)
 #' @param object An \code{lgcpReal} object from a call to \code{lgcp}
 #' @param linear A logical value indicating whether results should be reported on linear or exponential scales
 #' @param plot A logical value indicating whether to produce plots of the prior and posterior distributions of model parameters
@@ -966,14 +965,13 @@ summary_html <- function(object,linear=TRUE){
 #' a fine regular lattice, this function provides a way to aggregate this to non-regular polygons such as administrative or
 #' political boundaries.
 #'
-#' @usage aggregator(lg,lsoa,...)
 #' @param obj An lgcpRealPlot produced by \code{plot} or \code{plot_hotspot}. NOTE: the call \code{plot} or \code{plot_hotspot} must have
 #' had \code{osm=FALSE} set to work with this function.
 #' @param aggpoly A \code{spatialPolygons} or \code{spatialPolygonsDataFrame} object specifying the geography to aggregate to.
 #' @param osm A logical value indicating whether to overlay the plot on an OpenStreetMap map
 #' @return An lgcpRealPlot object comprising a list of two ggplot objects.
 #' @export
-aggregator <- function(obj,aggpoly,osm=FALSE){
+aggregator <- function(lg,aggpoly,osm=FALSE){
   if(!(class(aggpoly)=="SpatialPolygons"|class(aggpoly)=="SpatialPolygonsDataFrame"))
     stop("aggpoly must be of class ''SpatialPolygons or SpatialPolygonsDataFrame")
   if(nrow(obj[[1]]$data)<10)stop("Please replot without the osm option and add the OSM option to
