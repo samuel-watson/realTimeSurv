@@ -971,7 +971,7 @@ summary_html <- function(object,linear=TRUE){
 #' @param osm A logical value indicating whether to overlay the plot on an OpenStreetMap map
 #' @return An lgcpRealPlot object comprising a list of two ggplot objects.
 #' @export
-aggregator <- function(lg,aggpoly,osm=FALSE){
+aggregator <- function(obj,aggpoly,osm=FALSE){
   if(!(class(aggpoly)=="SpatialPolygons"|class(aggpoly)=="SpatialPolygonsDataFrame"))
     stop("aggpoly must be of class ''SpatialPolygons or SpatialPolygonsDataFrame")
   if(nrow(obj[[1]]$data)<10)stop("Please replot without the osm option and add the OSM option to
