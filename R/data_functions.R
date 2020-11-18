@@ -147,7 +147,11 @@ aggregator_data <- function(obj,aggpoly,osm=FALSE){
     res <- res[,c("value","poppred","linpred","xpred")]
     names(res) <- c("Incidence","Expected","Observed_rr","Latent_rr")
   }
-
+  if("name"%in%tolower(names(aggpoly))){
+    res@data$name <- as.character(aggpoly@data[,names(aggpoly)[which(tolower(names(aggpoly))=="name")]])
+  } else {
+    res@data$name <- "NA"
+  }
   return(res)
 
 }
