@@ -979,7 +979,7 @@ aggregator <- function(obj,aggpoly,osm=FALSE){
 
   dat1 <- obj[[1]]$data
   dat2 <- dat1[,c('x','y')]
-  coordinates(dat2) <- ~ x+y
+  sp::coordinates(dat2) <- ~ x+y
   dat2 <- as(dat2,"SpatialPixels")
   sp::proj4string(aggpoly) <- sp::CRS("+init=epsg:4326")
   sp::proj4string(dat2) <- sp::proj4string(aggpoly)
@@ -1041,7 +1041,7 @@ aggregator <- function(obj,aggpoly,osm=FALSE){
         floor((i/nrow(dataagg))/0.05)*5,"%",sep="");flush.console()
   }
   rownames(dataagg) <- dataagg$ID
-  res <- SpatialPolygonsDataFrame(map,dataagg)
+  res <- sp::SpatialPolygonsDataFrame(map,dataagg)
 
   if(attr(obj,"type")=="main"){
     rr_max <- attr(obj,"rr_lim")[1]
