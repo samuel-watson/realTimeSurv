@@ -519,6 +519,6 @@ plot_hotspot_data <- function(lg,
   res1 <- as(res1,"SpatialPixelsDataFrame")
   sp::proj4string(res1) <- sp::CRS("+init=epsg:4326")
   res1 <- res1[!is.na(res1@data$value),]
-  res1 <- res1[,names(res1)[(which(names(res1)=="class")):length(names(res1))]]
+  res1 <- res1[,names(res1)[match(c("class","class_prop"),names(res1))]]
   return(res1)
 }
