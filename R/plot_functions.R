@@ -111,7 +111,7 @@ lgcpExtract <- function(dirname, nchains){
   for(i in 1:nchains){
     mcmc[[i]] <- ncdf4::nc_open(paste0(dirname,".",i,"/simout.nc"))
     c1[[i]] <- ncdf4::ncvar_get(mcmc[[i]],'simrun')
-    ncdf4::nc_close(paste0(dirname,".",i,"/simout.nc"))
+    #ncdf4::nc_close(paste0(dirname,".",i,"/simout.nc"))
   }
   d1 <- dim(c1[[1]])
   out <- array(NA, dim=c(d1[1]*d1[2],d1[4]*nchains,d1[3]))
