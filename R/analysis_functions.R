@@ -463,6 +463,9 @@ lgcp <- function(data,
   if(class(boundary)!="SpatialPolygonsDataFrame")stop("Boundary needs to be of class SpatialPolygonsDataFrame")
   if(class(covariates)!="SpatialPolygonsDataFrame")stop("Covariates needs to be of class SpatialPolygonsDataFrame")
 
+  data <- data[,c('x','y','t')]
+  data <- data[order(data$t),]
+
   tlim <- c(1,laglength)
   data <- data[data$t %in% c(max(data$t):(max(data$t)-laglength)) ,]
   data$t <- data$t - (max(data$t)-laglength)
