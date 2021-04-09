@@ -1,6 +1,6 @@
 Package: realTimeSurv
 Title: Real Time Surveillance Using Geospatial Statistical Modelling
-Version: 0.0.0.9103
+Version: 0.0.0.92
 Authors@R: 
     person(given = "Sam",
            family = "Watson",
