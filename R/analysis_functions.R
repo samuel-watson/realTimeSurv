@@ -462,7 +462,9 @@ lgcp <- function(data,
   if(class(data)!="data.frame"|any(!colnames(data)%in%c('x','y','t')))stop("Data needs to be a data frame with columns x,y, and t")
   if(class(boundary)!="SpatialPolygonsDataFrame")stop("Boundary needs to be of class SpatialPolygonsDataFrame")
   if(class(covariates)!="SpatialPolygonsDataFrame")stop("Covariates needs to be of class SpatialPolygonsDataFrame")
+  if(any(is.na(data$x)|is.na(data$y)))warning(paste0(sum(is.na(data$x)|is.na(data$y))," rows have NA values and will be removed."))
 
+  data <- data[!is.na(data$x)&!is.na(data$y),]
   data <- data[,c('x','y','t')]
   data <- data[order(data$t),]
 
