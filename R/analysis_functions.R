@@ -398,7 +398,7 @@ mincontrast_st <- function(data,covariates,boundary){
   pop <- spatstat::as.im(popVal,win)
 
 
-  xyt <- lgcp::stppp.list(list(data = data, tlim = range(data$t), window = win))
+  xyt <- lgcp::stppp(list(data = data, tlim = range(data$t), window = win))
   vars.est <- lgcp::minimum.contrast.spatiotemporal(data=xyt,
                                               model="exponential",
                                               spatial.dens = pop,
@@ -473,7 +473,7 @@ lgcp <- function(data,
 
   win <- maptools::as.owin.SpatialPolygons(boundary)
 
-  xyt <- lgcp::stppp.list(list(data = data, tlim = tlim, window = win))
+  xyt <- lgcp::stppp(list(data = data, tlim = tlim, window = win))
   Owin <- lgcp::selectObsWindow(xyt,cellwidth)
 
   if(!is.null(sp.covs)){
