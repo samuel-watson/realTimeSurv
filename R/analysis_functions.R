@@ -596,7 +596,9 @@ lgcp <- function(data,
     if(!is.null(pop.var)){
       popVal <- function(x,y){
         spp <- sp::SpatialPoints(data.frame(x=x,y=y))
-        sp::proj4string(spp) <- sp::proj4string(covariates)
+        crsN <- "+init=epsg:4326 +proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0"
+        sp::proj4string(spp) <- crsN
+        sp::proj4string(covariates) <- crsN
         val <- sp::over(spp,covariates)
         return(val[,pop.var])
       }
