@@ -395,7 +395,7 @@ mincontrast_st <- function(data,covariates,boundary){
     return(val[,"popdens"])
   }
   win <- maptools::as.owin.SpatialPolygons(boundary)
-  pop <- spatstat::as.im(popVal,win)
+  pop <- spatstat.geom::as.im(popVal,win)
 
 
   xyt <- lgcp::stppp(list(data = data, tlim = range(data$t), window = win))
@@ -601,7 +601,7 @@ lgcp <- function(data,
         return(val[,pop.var])
       }
 
-      pop <- spatstat::as.im(popVal,win)
+      pop <- spatstat.geom::as.im(popVal,win)
       vars.est <- lgcp::minimum.contrast.spatiotemporal(data=xyt,
                                                   model="exponential",
                                                   spatial.dens = pop,
