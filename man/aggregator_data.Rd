@@ -4,7 +4,7 @@
 \alias{aggregator_data}
 \title{Create spatial polygons data frame}
 \usage{
-aggregator_data(obj, aggpoly, osm = FALSE)
+aggregator_data(obj, aggpoly)
 }
 \arguments{
 \item{obj}{A lgcpReal object from the lgcp function}

@@ -30,6 +30,8 @@ see Details for how to specify.}
 \item{threshold.value}{A vector or one or two values indicating the threshold(s) for determining
 a hotspot. Given in the same order as threshold.var.}
 
+\item{labels}{A vector of two or four labels for the hotspots, see Details.}
+
 \item{threshold.prob}{A vector of one or two values specifying the exceedence probabilities.}
 
 \item{relative}{A logical value. If one or both of the variable is with respect to a previous time period, whether the comparison
@@ -40,8 +42,6 @@ should be relative (TRUE) or absolute (FALSE)}
 \item{per.days}{If one or both of the variables is incidence, the denominator number of person-days.}
 
 \item{msq}{The denominator for the population density in m^2. Default is hectares (per 10,000m^2)}
-
-\item{lables}{A vector of two or four labels for the hotspots, see Details.}
 }
 \value{
 An lgcpRealPlot object comprising a list of two ggplot objects.
@@ -98,6 +98,7 @@ d = Pr(variable 1 > threshold 1) > p1 & Pr(variable 2 > threshold 2) > p2
 The labels do not need to be unique.
 }
 \examples{
+\dontrun{
 p1 <- plot_hotspot(lg,
                    covariates=lsoa,
                    threshold.var=c('poppp+obs+latent'),
@@ -112,4 +113,5 @@ p2 <- plot_hotspot(lg,
                    labels = c('low','high','rising','both'),
                    threshold.prob=0.5,
                    osm = TRUE)
+}
 }

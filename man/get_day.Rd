@@ -17,7 +17,9 @@ A data frame with value for time period and day of the week.
 Returns a data frame with day of the week covariates
 }
 \examples{
+\dontrun{
 tmp <- data.frame(address=c("Buckingham palace","Big ben, Westminster","Marble arch, London"),
                   date = c("01/01/2020","02/01/2020","03/01/2020"))
 get_day(tmp)
+}
 }
