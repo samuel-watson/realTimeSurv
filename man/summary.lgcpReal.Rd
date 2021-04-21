@@ -4,7 +4,7 @@
 \alias{summary.lgcpReal}
 \title{Summarise lgcp output}
 \usage{
-\method{summary}{lgcpReal}(object, linear = TRUE, plot = TRUE, prior = FALSE)
+\method{summary}{lgcpReal}(object, linear = TRUE, plot = TRUE, verbose = TRUE, ...)
 }
 \arguments{
 \item{object}{An \code{lgcpReal} object from a call to \code{lgcp}}
@@ -13,7 +13,9 @@
 
 \item{plot}{A logical value indicating whether to produce plots of the prior and posterior distributions of model parameters}
 
-\item{prior}{A logical value indicating whether to report prior distributions in the summary output}
+\item{verbose}{A logical value indicating whether to print running time and chains}
+
+\item{...}{...}
 }
 \value{
 A table with posterior mean, SD, and quantiles of posterior and prior distributions.

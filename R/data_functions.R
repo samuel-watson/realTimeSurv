@@ -11,8 +11,10 @@
 #' geography to aggregate to.
 #' @return A \code{spatialPolygonsDataFrame}
 #' @export
-aggregator_data <- function(obj,aggpoly,osm=FALSE){
-  if(!(class(aggpoly)=="SpatialPolygons"|class(aggpoly)=="SpatialPolygonsDataFrame"))
+aggregator_data <- function(obj,
+                            aggpoly){
+  if(!is(obj,"lgcpRealPlot"))stop("obj must be an lgcpRealPlot from either plot or plot_hospot functions.")
+  if((!is(aggpoly,"SpatialPolygons")|!is(aggpoly,"SpatialPolygonsDataFrame")))
     stop("aggpoly must be of class ''SpatialPolygons or SpatialPolygonsDataFrame")
   if(nrow(obj[[1]]$data)<10)stop("Please replot without the osm option and add the OSM option to
                                  this function.")
@@ -27,7 +29,7 @@ aggregator_data <- function(obj,aggpoly,osm=FALSE){
   dat_area <- dat2@polygons[[1]]@area
 
 
-  if(class(aggpoly)=="SpatialPolygonsDataFrame"){
+  if(is(aggpoly,"SpatialPolygonsDataFrame")){
     map <- as(aggpoly,"SpatialPolygons")
   } else {
     map <- aggpoly
@@ -187,7 +189,7 @@ plot_data <- function(lg,
                       msq = 10000,
                       rr_lim=NULL){
   if(missing(covariates))stop("Specify the covariate spatial polygons data frame")
-  if(class(lg)!="lgcpReal")stop("lg must be of class lgcpReal")
+  if(!(is(lg,"lgcpReal")))stop("lg must be of class lgcpReal")
   OW <- lgcp::selectObsWindow(lg$xyt, cellwidth = lg$cellwidth)
 
   grid.data <- expand.grid(x=OW$xvals,y=OW$yvals)
@@ -200,7 +202,7 @@ plot_data <- function(lg,
     assign("outl",outl,.GlobalEnv)
   }
 
-  res1 <- suppressWarnings( realTimeSurv:::.plot_lgcp_dat(outl,
+  res1 <- suppressWarnings( plot_lgcp_dat(outl,
                                                           grid.data,
                                                           lg,
                                                           lg$nchains,
@@ -221,7 +223,7 @@ plot_data <- function(lg,
   rr_title <- "RR"
 
   if(!is.null(change.lag)){
-    reslag <- suppressWarnings(.plot_lgcp_dat(outl,grid.data,lg,lg$nchains,
+    reslag <- suppressWarnings(plot_lgcp_dat(outl,grid.data,lg,lg$nchains,
                                               idx.mapping,covariates = covariates,
                                               plotlag = change.lag))
 
@@ -284,7 +286,7 @@ plot_data <- function(lg,
 #' see Details for how to specify.
 #' @param threshold.value A vector or one or two values indicating the threshold(s) for determining
 #' a hotspot. Given in the same order as threshold.var.
-#' @param lables A vector of two or four labels for the hotspots, see Details.
+#' @param labels A vector of two or four labels for the hotspots, see Details.
 #' @param threshold.prob A vector of one or two values specifying the exceedence probabilities.
 #' @param relative A logical value. If one or both of the variable is with respect to a previous time period, whether the comparison
 #' should be relative (TRUE) or absolute (FALSE)
@@ -329,7 +331,7 @@ plot_hotspot_data <- function(lg,
     lag1 <- 0
   }
 
-  res1 <- realTimeSurv:::.plot_lgcp_dat(outl,
+  res1 <- plot_lgcp_dat(outl,
                                         grid.data,
                                         lg,
                                         lg$nchains,
@@ -359,7 +361,7 @@ plot_hotspot_data <- function(lg,
   }
 
   if(lag1>0){
-    res2 <- realTimeSurv:::.plot_lgcp_dat(outl,
+    res2 <- plot_lgcp_dat(outl,
                                           grid.data,
                                           lg,
                                           lg$nchains,
@@ -401,7 +403,7 @@ plot_hotspot_data <- function(lg,
       lag2 <- 0
     }
 
-    res3 <- realTimeSurv:::.plot_lgcp_dat(outl,
+    res3 <- plot_lgcp_dat(outl,
                                           grid.data,
                                           lg,
                                           lg$nchains,
@@ -430,7 +432,7 @@ plot_hotspot_data <- function(lg,
     }
 
     if(lag2>0){
-      res4 <- .plot_lgcp_dat(outl,
+      res4 <- plot_lgcp_dat(outl,
                              grid.data,
                              lg,
                              lg$nchains,

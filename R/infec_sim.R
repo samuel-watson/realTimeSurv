@@ -49,7 +49,7 @@ infecSim <- function(region,
 
   cov1 <- geoR::grf(n=nrow(spgrd)*2,
               grid=spgrd,
-              borders = as.matrix(bham.df[,c('long','lat')],ncol=2),
+              borders = as.matrix(region.df[,c('long','lat')],ncol=2),
               nx=100,
               ny=100,
               cov.model = "exponential",
@@ -58,7 +58,7 @@ infecSim <- function(region,
 
   cov2 <- geoR::grf(n=nrow(spgrd)*2,
               grid=spgrd,
-              borders = as.matrix(bham.df[,c('long','lat')],ncol=2),
+              borders = as.matrix(region.df[,c('long','lat')],ncol=2),
               nx=100,
               ny=100,
               cov.model = "exponential",
@@ -111,25 +111,27 @@ infecSim <- function(region,
   pts$x <- pts$x+runif(nrow(pts),-x.size/2,x.size/2)
   pts$y <- pts$y+runif(nrow(pts),-x.size/2,x.size/2)
 
-  pl1 <- ggplot(data=dat,aes(x=x,y=y,fill=log(intens)))+
-    geom_raster()+
-    scale_fill_viridis_c()+
-    facet_wrap(~t)+
-    theme_bw()+
-    theme(panel.grid = element_blank())
+  # pl1 <- ggplot(data=dat,aes(x=x,y=y,fill=log(intens)))+
+  #   geom_raster()+
+  #   scale_fill_viridis_c()+
+  #   facet_wrap(~t)+
+  #   theme_bw()+
+  #   theme(panel.grid = element_blank())
+  #
+  # pl2 <- ggplot(data=pts,aes(x=x,y=y))+
+  #   geom_point(color="red",size=0.1)+
+  #   geom_path(data=region.df,aes(x=long,y=lat))+
+  #   scale_fill_viridis_c(name="Log\nintensity")+
+  #   facet_wrap(~t)+
+  #   theme_bw()+
+  #   theme(panel.grid = element_blank())
 
-  pl2 <- ggplot(data=pts,aes(x=x,y=y))+
-    geom_point(color="red",size=0.1)+
-    geom_path(data=region.df,aes(x=long,y=lat))+
-    scale_fill_viridis_c(name="Log\nintensity")+
-    facet_wrap(~t)+
-    theme_bw()+
-    theme(panel.grid = element_blank())
+  # datxyt <- as.matrix(pts[,c('x','y','t')])
+  # attr(datxyt,"class") <- "stpp"
 
-  datxyt <- as.matrix(pts[,c('x','y','t')])
-  attr(datxyt,"class") <- "stpp"
+  #return(list(dat,pts[,c('x','y','t')],pl1,pl2,datxyt))
 
-  return(list(dat,pts[,c('x','y','t')],pl1,pl2,datxyt))
-
-
+  return(pts[,c('x','y','t')])
 }
+
+

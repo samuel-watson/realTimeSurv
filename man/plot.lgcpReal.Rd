@@ -5,18 +5,19 @@
 \title{Real-time surveillance plot}
 \usage{
 \method{plot}{lgcpReal}(
-  lg,
+  x,
   covariates,
   osm = FALSE,
   per.days = 10000,
   change.lag = NULL,
   relative = TRUE,
   msq = 10000,
-  rr_lim = NULL
+  rr_lim = NULL,
+  ...
 )
 }
 \arguments{
-\item{lg}{An lgcpReal object, output from a call to \code{lgcp}}
+\item{x}{An lgcpReal object, output from a call to \code{lgcp}}
 
 \item{covariates}{A \code{spatialPolygonsDataFrame} covering the area of interest and containing
 the covariate and population density data. Typically the same object as specified in the
@@ -37,6 +38,8 @@ i.e. incidence rate ratios and ratios of relative risks, or absolute.}
 
 \item{rr_lim}{Integer, for plotting the relative risk, the maximum value of the colour scale. Useful
 when comparing multiple plots to put colour gradient on same scale.}
+
+\item{...}{...}
 }
 \value{
 A list of two ggplot objects. The first is the incidence (or change in incidence) the

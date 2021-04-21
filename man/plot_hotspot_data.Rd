@@ -29,6 +29,8 @@ see Details for how to specify.}
 \item{threshold.value}{A vector or one or two values indicating the threshold(s) for determining
 a hotspot. Given in the same order as threshold.var.}
 
+\item{labels}{A vector of two or four labels for the hotspots, see Details.}
+
 \item{threshold.prob}{A vector of one or two values specifying the exceedence probabilities.}
 
 \item{relative}{A logical value. If one or both of the variable is with respect to a previous time period, whether the comparison
@@ -37,8 +39,6 @@ should be relative (TRUE) or absolute (FALSE)}
 \item{per.days}{If one or both of the variables is incidence, the denominator number of person-days.}
 
 \item{msq}{The denominator for the population density in m^2. Default is hectares (per 10,000m^2)}
-
-\item{lables}{A vector of two or four labels for the hotspots, see Details.}
 }
 \value{
 A \code{spatialPixelsDataFrame}

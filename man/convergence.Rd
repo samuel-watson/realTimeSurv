@@ -4,10 +4,12 @@
 \alias{convergence}
 \title{MCMC convergence diagnostics}
 \usage{
-convergence(lg)
+convergence(lg, plots = TRUE)
 }
 \arguments{
 \item{lg}{Output from a call to \code{lgcp}}
+
+\item{plots}{Logical indicating whether to plot MCMC traceplots}
 }
 \value{
 Traceplot of the MCMC chains of parameters from the linear predictor and

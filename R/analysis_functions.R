@@ -10,9 +10,11 @@
 #' @param api_key A string. A valid Google Developers Geocode API key.
 #' @return A data frame with the columns for longitude, latitude, and time.
 #' @examples
+#' \dontrun{
 #' tmp <- data.frame(address=c("Buckingham palace","Big ben, Westminster","Marble arch, London"),
 #'                   date = c("01/01/2020","02/01/2020","03/01/2020"))
 #' geocode_st(tmp, api_key = "ENTER_KEY")
+#' }
 #' @export
 geocode_st <- function(df,api_key){
   if(!"address"%in%tolower(colnames(df)))stop("Column name for addresses should be 'Address' or 'address'")
@@ -58,9 +60,11 @@ geocode_st <- function(df,api_key){
 #' of the cases. Typically the same data frame used in a call to \code{geocode_st}
 #' @return A data frame with value for time period and day of the week.
 #' @examples
+#' \dontrun{
 #' tmp <- data.frame(address=c("Buckingham palace","Big ben, Westminster","Marble arch, London"),
 #'                   date = c("01/01/2020","02/01/2020","03/01/2020"))
 #' get_day(tmp)
+#' }
 #' @export
 get_day <- function(df){
   if(!"date"%in%tolower(colnames(df)))stop("Column name for dates should be 'Date' or 'date'")
@@ -83,7 +87,24 @@ get_day <- function(df){
 #' Internal function and alternative to \code{lgcp::lgcpPredictSpatioTemporalPlusPars}.
 #'
 #' A copy of \code{lgcp::lgcpPredictSpatioTemporalPlusPars} that parallelises the sampler and
-#' produces a reduced output and lgcpReal object. See \code{help(lgcpPredictSpatioTemporalPlusPars)}.
+#' produces a reduced output and lgcpReal object. See \code{help(lgcpPredictSpatioTemporalPlusPars)}
+#' for more information.
+#'
+#' @param formula a formula object of the form X ~ var1 + var2 etc. The name of the dependent variable must be "X". Only accepts 'simple' formulae, such as the example given.
+#' @param xyt An object of class stppp
+#' @param T the time point of interest
+#' @param laglength the number of previous time points to include in the analysis
+#' @param ZmatList A list of design matrices Z constructed with getZmat and possibly addTemporalCovariates see the details below and Bayesian_lgcp vignette for details on how to construct this.
+#' @param model.priors model priors, set using lgcpPrior
+#' @param model.inits model initial values. The default is NULL, in which case lgcp will use the prior mean to initialise eta and beta will be initialised from an oversispersed glm fit to the data. Otherwise use lgcpInits to specify.
+#' @param spatial.covmodel choice of spatial covariance function. See ?CovFunction
+#' @param cellwidth the width of computational cells
+#' @param poisson.offset A list of SpatialAtRisk objects (of length the number of types) defining lambda_k (see below)
+#' @param mcmc.control MCMC paramters, see ?mcmcpars
+#' @param output.control output choice, see ?setoutput
+#' @param gradtrunc truncation for gradient vector equal to H parameter Moller et al 1998 pp 473. Default is Inf, which means no gradient truncation, which seems to work in most settings.
+#' @param ext integer multiple by which grid should be extended, default is 2. Generally this will not need to be altered, but if the spatial correlation decays slowly, increasing 'ext' may be necessary.
+#' @param inclusion criterion for cells being included into observation window. Either 'touching' or 'centroid'. The former, the default, includes all cells that touch the observation window, the latter includes all cells whose centroids are inside the observation window.
 #' @export
 lgcpST <- function (formula, xyt, T, laglength, ZmatList = NULL, model.priors,
                     model.inits = lgcpInits(), spatial.covmodel, cellwidth = NULL,
@@ -127,9 +148,9 @@ lgcpST <- function (formula, xyt, T, laglength, ZmatList = NULL, model.priors,
   if (!is.null(cellwidth) & !is.null(gridsize)) {
     stop("Either cell width OR grid size must be specified")
   }
-  if (!all(sapply(gridsize, is.pow2))) {
-    stop("All elements of gridsize must be a power of 2")
-  }
+  # if (!all(sapply(gridsize, is.pow2))) {
+  #   stop("All elements of gridsize must be a power of 2")
+  # }
   if (!is.null(gridsize)) {
     approxcw <- diff(xyt$window$xrange)/gridsize[1]
     cwseq <- seq(approxcw/2, 2 * approxcw, length.out = 500)
@@ -382,29 +403,46 @@ lgcpST <- function (formula, xyt, T, laglength, ZmatList = NULL, model.priors,
 #' @param covariates A \code{spatialPolygonsDataFrame} covering the area of interest with the
 #' population density column named \code{popdens}
 #' @param boundary A \code{spatialPolygonsDataFrame} of the boundary of the area of interest.
+#' @param pop.var Name of the population density variable
 #' @return Returned values are the minimum contrast estimates of phi, sigma^2 and theta,
 #' as well as the overall squared discrepancy between the parametric and nonparametric forms
 #' of the spatial function used corresponding to these estimates.
 #' @export
-mincontrast_st <- function(data,covariates,boundary){
-  requireNamespace("spatstat")
-  popVal <- function(x,y){
-    spp <- sp::SpatialPoints(data.frame(x=x,y=y))
-    crsN <- CRS("+init=epsg:4326 +proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0")
-    sp::proj4string(spp) <- crsN
-    sp::proj4string(covariates) <- crsN
-    val <- sp::over(spp,covariates)
-    return(val[,"popdens"])
-  }
+mincontrast_st <- function(data,
+                           covariates,
+                           boundary,
+                           pop.var = "popdens"){
+  if(!is(data,"data.frame")|any(!colnames(data)%in%c('x','y','t')))stop("Data needs to be a data frame with columns x,y, and t")
+  if(!is(boundary,"SpatialPolygonsDataFrame"))stop("Boundary needs to be of class SpatialPolygonsDataFrame")
+  if(!is.null(covariates)&!is(covariates,"SpatialPolygonsDataFrame"))stop("Covariates needs to be of class SpatialPolygonsDataFrame")
+
   win <- maptools::as.owin.SpatialPolygons(boundary)
-  pop <- spatstat.geom::as.im(popVal,win)
+
+  if(!is.null(covariates)){
+    requireNamespace("spatstat")
+    popVal <- function(x,y){
+      spp <- sp::SpatialPoints(data.frame(x=x,y=y))
+      crsN <- CRS("+init=epsg:4326")
+      sp::proj4string(spp) <- crsN
+      sp::proj4string(covariates) <- crsN
+      val <- sp::over(spp,covariates)
+      return(val[,pop.var])
+    }
+
+    pop <- spatstat.geom::as.im(popVal,win)
+    xyt <- lgcp::stppp(list(data = data, tlim = range(data$t), window = win))
+    vars.est <- suppressWarnings(lgcp::minimum.contrast.spatiotemporal(data=xyt,
+                                                      model="exponential",
+                                                      spatial.dens = pop,
+                                                      temporal.intens = lgcp::muEst(xyt)))
+  } else {
+    xyt <- lgcp::stppp(list(data = data, tlim = range(data$t), window = win))
+    vars.est <- suppressWarnings(lgcp::minimum.contrast.spatiotemporal(data=xyt,
+                                                      model="exponential",
+                                                      temporal.intens = lgcp::muEst(xyt)))
+  }
 
 
-  xyt <- lgcp::stppp(list(data = data, tlim = range(data$t), window = win))
-  vars.est <- lgcp::minimum.contrast.spatiotemporal(data=xyt,
-                                              model="exponential",
-                                              spatial.dens = pop,
-                                              temporal.intens = lgcp::muEst(xyt))
   return(vars.est$estimates)
 }
 
@@ -452,7 +490,7 @@ lgcp <- function(data,
                  t.covs=NULL,
                  pop.var=NULL,
                  boundary,
-                 covariates,
+                 covariates=NULL,
                  cellwidth,
                  laglength,
                  dirname,
@@ -461,9 +499,9 @@ lgcp <- function(data,
                  nchains=parallel::detectCores(),
                  lib=NULL){
 
-  if(class(data)!="data.frame"|any(!colnames(data)%in%c('x','y','t')))stop("Data needs to be a data frame with columns x,y, and t")
-  if(class(boundary)!="SpatialPolygonsDataFrame")stop("Boundary needs to be of class SpatialPolygonsDataFrame")
-  if(class(covariates)!="SpatialPolygonsDataFrame")stop("Covariates needs to be of class SpatialPolygonsDataFrame")
+  if(!is(data,"data.frame")|any(!colnames(data)%in%c('x','y','t')))stop("Data needs to be a data frame with columns x,y, and t")
+  if(!is(boundary,"SpatialPolygonsDataFrame"))stop("Boundary needs to be of class SpatialPolygonsDataFrame")
+  if(!is.null(covariates)&!is(covariates,"SpatialPolygonsDataFrame"))stop("Covariates needs to be of class SpatialPolygonsDataFrame")
   if(any(is.na(data$x)|is.na(data$y)))warning(paste0(sum(is.na(data$x)|is.na(data$y))," rows have NA values and will be removed."))
 
   data <- data[!is.na(data$x)&!is.na(data$y),]
@@ -509,7 +547,10 @@ lgcp <- function(data,
 
   T <- tlim[2]
 
-  covariates@data <- lgcp::guessinterp(covariates@data)
+  if(!is.null(pop.var)|!is.null(sp.covs)){
+    covariates@data <- lgcp::guessinterp(covariates@data)
+
+  }
 
   if(!is.null(sp.covs)){
     form.sp <- as.formula(form.sp)
@@ -519,7 +560,7 @@ lgcp <- function(data,
                           regionalcovariates = covariates,
                           ext = 2)
 
-    covariates@data <- lgcp::guessinterp(covariates@data)
+    #covariates@data <- lgcp::guessinterp(covariates@data)
 
     Zmat <- lgcp::getZmat(
       formula = form.sp,
@@ -598,7 +639,7 @@ lgcp <- function(data,
     if(!is.null(pop.var)){
       popVal <- function(x,y){
         spp <- sp::SpatialPoints(data.frame(x=x,y=y))
-        crsN <- CRS("+init=epsg:4326 +proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0")
+        crsN <- CRS("+init=epsg:4326")
         sp::proj4string(spp) <- crsN
         sp::proj4string(covariates) <- crsN
         val <- sp::over(spp,covariates)
@@ -606,14 +647,14 @@ lgcp <- function(data,
       }
 
       pop <- spatstat.geom::as.im(popVal,win)
-      vars.est <- lgcp::minimum.contrast.spatiotemporal(data=xyt,
+      vars.est <- suppressWarnings(lgcp::minimum.contrast.spatiotemporal(data=xyt,
                                                   model="exponential",
                                                   spatial.dens = pop,
-                                                  temporal.intens = lgcp::muEst(xyt))
+                                                  temporal.intens = lgcp::muEst(xyt)))
     } else {
-      vars.est <- lgcp::minimum.contrast.spatiotemporal(data=xyt,
+      vars.est <- suppressWarnings(lgcp::minimum.contrast.spatiotemporal(data=xyt,
                                                   model="exponential",
-                                                  temporal.intens = lgcp::muEst(xyt))
+                                                  temporal.intens = lgcp::muEst(xyt)))
     }
 
 
@@ -628,10 +669,10 @@ lgcp <- function(data,
                                           variance = diag(rep(log(5),3), 3)))
 
     priors <- lgcp::lgcpPrior(etaprior = lgprior, betaprior = gprior)
-  } else if(class(prevRun)=="lgcpReal"){
+  } else if(is(prevRun,"lgcpReal")){
     priors <- lgcp::lgcpPrior(etaprior = prevRun$lgprior, betaprior = prevRun$gprior)
     INITS <- prevRun$INITS
-  } else if(class(prevRun)[1]=="lgcpPrior"){
+  } else if(is(prevRun,"lgcpPrior")){
     priors <- prevRun
   }
 
@@ -677,12 +718,12 @@ lgcp <- function(data,
   cat("\nSampling complete at: ",Sys.time())
   parallel::stopCluster(cl)
 
-  if(class(lg.out)[1]=="matrix"){
+  if(is(lg.out,"matrix")){
     eta <- do.call(rbind,lapply(1:8,function(i)return(lg.out[,i]$etarec)))
     beta <- do.call(rbind,lapply(1:8,function(i)return(lg.out[,i]$betarec)))
     timetaken <- do.call(rbind,lapply(1:8,function(i)return(lg.out[,i]$timetaken)))
     lasth <- do.call(rbind,lapply(1:8,function(i)return(lg.out[,i]$lasth)))
-  } else if(class(lg.out)[1]=="list"){
+  } else if(is(lg.out,"list")){
     eta <- do.call(rbind,lapply(1:8,function(i)return(lg.out[[i]]$etarec)))
     beta <- do.call(rbind,lapply(1:8,function(i)return(lg.out[[i]]$betarec)))
     timetaken <- do.call(rbind,lapply(1:8,function(i)return(lg.out[[i]]$timetaken)))
@@ -737,266 +778,6 @@ lgcp <- function(data,
 
 }
 
-#' Report generating function
-#'
-#' To be completed
-#' @export
-generateReport <- function(lg,
-                           plot.opts=list(),
-                           dirname=getwd(),
-                           change.lag=NULL,
-                           par.summ = FALSE,
-                           hotspot.opts=NULL,
-                           breakdown.plots=TRUE,
-                           aggregate=NULL,
-                           repdate=format(Sys.time(), '%d %B, %Y'),
-                           add3D=FALSE,
-                           pdf=FALSE) {
-
-  if(is.null(plot.opts)|length(plot.opts)==0)stop("No plot options provided.\n")
-  if(!is.null(aggregate)&!(class(aggregate)=="SpatialPolygons"|
-                           class(aggregate)=="SpatialPolygonsDataFrame"))stop("Aggregate must be of class SpatialPolygons or SpatialPolygonsDataFrame")
-  set.plot.osm1 <- FALSE
-  if(!is.null(plot.opts$osm)){
-    if(plot.opts$osm==TRUE){
-      plot.opts$osm <- FALSE
-      set.plot.osm1 <- TRUE
-    }
-  }
-
-  set.plot.osm2 <- FALSE
-  if(!is.null(hotspot.opts$osm)){
-    if(hotspot.opts$osm==TRUE){
-      hotspot.opts$osm <- FALSE
-      set.plot.osm2 <- TRUE
-    }
-  }
-
-  rmd_file_name <- paste0("surveillance_",format(Sys.time(), '%d_%m_%Y'),".Rmd")
-  nm <-deparse(substitute(lg))
-  nm_dat <-deparse(substitute(cov))
-  datetoday <- repdate
-
-  if(!pdf){
-    content <- paste0(
-      "---",
-      "\n",
-      "title: Surveillance report\n",
-      "output:  html_document\n",
-      "date: ",
-      datetoday,
-      "\n",
-      "---"
-    )
-  } else {
-    content <- paste0(
-      "---",
-      "\n",
-      "title: Surveillance report\n",
-      "output:  pdf_document\n",
-      "date: ",
-      datetoday,
-      "\n",
-      "---"
-    )
-  }
-
-
-  #   opts <- "```{r setup, include=FALSE}
-  # knitr::opts_chunk$set(echo = TRUE)
-  # ```"
-
-  tmp <- do.call(plot.lgcpReal,append(plot.opts,list(lg),after=0))
-  if(!is.null(aggregate)){
-    tmp <- aggregator(tmp,aggregate,osm=set.plot.osm1)
-  }
-
-  content_mainplot <- paste0(
-    "## Incidence\n\n",
-    "The incidence of cases is shown in the plot below as the number of cases per 10,000 person days.\n",
-    "```{r, echo=FALSE}\ntmp[[1]]\n",
-    "```\n\n"
-  )
-
-  content <- paste0(content,
-                    "\n\n",
-                    content_mainplot)
-
-  if(breakdown.plots){
-    content_secondplot <- paste0(
-      "### Components\n\n",
-      "The breakdown of the different components of incidence is shown below:\n\n
-    1. 'Expected': the expected number of cases from each location,\n
-    2. 'Observed': differences in risk of a case associated with observed factors (as a relative risk),\n
-    3. 'latent': unexplained differences in the risk of cases (as a relative risk),\n
-    4. 'posterior SD': the standard deviation of the prediction of incidence.\n\n",
-      "```{r, echo=FALSE}\ntmp[[2]]\n",
-      "```\n\n"
-    )
-
-
-    content <- paste0(content,
-                      "\n\n",
-                      content_secondplot)
-  }
-
-
-
-  if(!is.null(change.lag)){
-
-    chang.opts <- append(plot.opts,c(change.lag=change.lag),after=0)
-    chang.opts <- append(chang.opts,list(lg),after=0)
-
-    tmp2 <- do.call(plot.lgcpReal,chang.opts)
-    if(!is.null(aggregate)){
-      tmp2 <- aggregator(tmp2,aggregate)
-    }
-
-    content_addplot <- paste0(
-      "## Change to incidence\n\n",
-      "The change to incidence compared to ",change.lag," days ago. The values represent _incidence
-      rate ratio_, for example a value of 1 indicates no change, a value of 2 is that on average the incidence
-      has doubled from what it was ",change.lag," days previous, and a value of 0.5 is a halving.
-      The yellow to red colours indicate values greater than one for
-       relative risks and incidence rate ratios, and blue to purple is for values below 1.\n\n\n",
-      "```{r, echo=FALSE}\ntmp2[[1]]\n",
-      "```\n\n\n")
-
-    if(breakdown.plots){
-      content_addplot <- paste0(content_addplot,
-                                "And comparisons of the different components over this period.\n\n\n",
-                                "```{r, echo=FALSE}\ntmp2[[2]]\n",
-                                "```\n\n"
-      )
-    }
-
-
-    content <- paste0(content,content_addplot)
-  }
-
-  if(!is.null(hotspot.opts)){
-
-    tmp3 <- do.call(plot_hotspot,append(hotspot.opts,list(lg),after=0))
-    tstr <- attr(tmp3,'str')
-    tval <- attr(tmp3,'vals')
-    tlab <- attr(tmp3,'labs')
-
-    if(!is.null(aggregate)){
-      tmp3 <- aggregator(tmp3,aggregate,osm=set.plot.osm2)
-    }
-
-    if(length(tstr)==1){
-
-      if(grepl("pop",tstr)&grepl("obs",tstr)&grepl("latent",tstr)&!grepl("lag",tstr)){
-        tstr <- "Incidence"
-      } else if(grepl("pop",tstr)&grepl("obs",tstr)&grepl("latent",tstr)&grepl("lag",tstr)){
-        tstr <- "Incidence rate ratio"
-      }
-
-      hotspot_desc <- paste0(
-        "The hotspot is defined as:\n\n",
-        "1. ",tstr," < ",tval,": ",tlab[1],"\n\n",
-        "2. ",tstr," >= ",tval,": ",tlab[2],"\n\n"
-      )
-    } else{
-      hotspot_desc <- paste0(
-        "The hotspot is defined as:\n\n",
-        "1. ",tstr[1]," < ",tval[1]," **and** ",
-        tstr[2]," < ",tval[2],
-        ": ",tlab[1],"\n\n",
-        "2. ",tstr[1]," >= ",tval[1]," **and** ",
-        tstr[2]," < ",tval[2],
-        ": ",tlab[2],"\n\n",
-        "3. ",tstr[1]," < ",tval[1]," **and** ",
-        tstr[2]," >= ",tval[2],
-        ": ",tlab[3],"\n\n",
-        "4. ",tstr[1]," >= ",tval[1]," **and** ",
-        tstr[2]," >= ",tval[2],
-        ": ",tlab[4],"\n\n"
-      )
-    }
-
-    # hotplot_func <- "```{r, echo=FALSE, results='hide', warning=FALSE, message=FALSE,fig.show='hide'}
-    #   \ntmp3 <- do.call(plot_hotspot,hotspot.opts)\ntvals <- attr(tmp3,'vals')\n
-    # tprob <- attr(tmp3,'threshold')\n tstr <- attr(tmp3,'str')\n```\n\n\n"
-
-    # hotspot_desc2 <- "The terms above describe different combinations of terms from the model.
-    # 'pop' indicates the population density has been included, 'obs' is the observed covariates, and
-    # 'latent' is the unexplained differences. Where 'pop' is not included the results are relative risks
-    # that multiply the expected risk in each area, where it is included, then the results are
-    # an incidence. For example 'pop+obs+latent' is the complete model a predicts absolute incidence,
-    # whereas 'obs+latent' is the relative risk accounted for by both observed and unobserved
-    # components. If a term 'lag(t)' is included, this indicates that the preceding term is differenced
-    # with *t* periods prior.\n\n"
-
-    hotspot_desc2 <- "The following hotspot classification indicates that if there is a greater than
-    80% probability that the incidence has increased by 50% or more in the past 7 days. The second plot
-    shows the raw probability of being a 'hotspot'."
-
-    content_hotplot <- paste0(
-      "## Hotspots\n\n",
-      "The area below is classified into hotspots based on the definition provided.\n\n",hotspot_desc,hotspot_desc2,"\n\n",
-      "```{r, echo=FALSE}\ntmp3[[1]]\n",
-      "```\n\n\n\n",
-      "```{r, echo=FALSE}\ntmp3[[2]]\n",
-      "```\n\n\n"
-    )
-
-    content <- paste0(content,content_hotplot)
-  }
-
-  if(par.summ){
-    summtab <- summary_html(lg)
-
-    content_summary <- paste0(
-      "## Model parameters\n\n",summtab[[3]],summtab[[1]],"\n\n\n### Plot of model parameters\n\n\n",
-      "```{r, echo=FALSE}\nsummtab[[2]]\n",
-      "```\n\n\n"
-    )
-
-    content <- paste0(content,content_summary)
-  }
-
-  if(add3D){
-    content_3d_head <- "## 3D renders\n\n### Incidence\n\n"
-    content_3d <- paste0(content_3d_head,"```{r, echo=FALSE}\nrayshader::plot_gg(tmp[[1]],
-            multicore = TRUE,width=5,height=5,scale=125,zoom=0.5, windowsize = c(1400,866),
-            phi=30,theta=35)\nrayshader::render_snapshot(clear=T)\n",
-                         "```\n\n")
-    # if(osm){
-    #   content_3d<- paste0(content_3d_head,
-    #                       "```{r, echo=FALSE, results='hide', warning=FALSE, message=FALSE,fig.show='hide'}\n
-    # tmpb <- plot(",nm,")\n",
-    #                       "```{r, echo=FALSE}\nrayshader::plot_gg(tmpb[[1]],
-    #         multicore = TRUE,width=5,height=5,scale=125,zoom=0.5, windowsize = c(1400,866),
-    #         phi=30,theta=35)\nrayshader::render_snapshot(clear=T)\n",
-    #                       "```\n\n")
-    # } else {
-    #   content_3d <- paste0(content_3d_head,"```{r, echo=FALSE}\nrayshader::plot_gg(tmp[[1]],
-    #         multicore = TRUE,width=5,height=5,scale=125,zoom=0.5, windowsize = c(1400,866),
-    #         phi=30,theta=35)\nrayshader::render_snapshot(clear=T)\n",
-    #                        "```\n\n")
-    # }
-
-
-    content <- paste0(content,content_3d)
-
-    if(!is.null(hotspot.opts)){
-      content_3d2 <- paste0("### Hotspot probabilities\n\n",
-                            "```{r, echo=FALSE}\nrayshader::plot_gg(tmp3[[2]],
-            multicore = TRUE,width=5,height=5,scale=100,zoom=0.5, windowsize = c(1400,866),
-            phi=30,theta=35)\nrayshader::render_snapshot(clear=T)\n",
-                            "```\n\n")
-
-      content <- paste0(content,content_3d2)
-    }
-  }
-
-  write(content, paste0(dirname,"/",rmd_file_name))
-
-  rmarkdown::render(paste0(dirname,"/",rmd_file_name))
-}
-
 #' MCMC convergence diagnostics
 #'
 #' Diagnostics for convergence of the MCMC chains from a call to \code{lgcp}.
@@ -1004,11 +785,13 @@ generateReport <- function(lg,
 #' Produces a traceplot of the model parameters and prints R-hat and ESS statistics.
 #'
 #' @param lg Output from a call to \code{lgcp}
+#' @param plots Logical indicating whether to plot MCMC traceplots
 #' @return Traceplot of the MCMC chains of parameters from the linear predictor and
 #' covariance function is plotted, and R-hat and ESS statistics are printed.
 #' @export
-convergence <- function(lg){
-  if(class(lg)!="lgcpReal")stop("lg must be of class lgcpReal")
+convergence <- function(lg,
+                        plots=TRUE){
+  if(!is(lg,"lgcpReal"))stop("lg must be of class lgcpReal")
   nchains <- nrow(lg$lgcpRunInfo$timetaken)
   iter <- nrow(lg$beta)
   iter2 <- iter/nchains
@@ -1037,12 +820,16 @@ convergence <- function(lg){
     return(out)
   })
   etalist_mcmc <- coda::mcmc.list(lapply(etalist,function(i)coda::mcmc(i)))
-  p1 <- bayesplot::mcmc_trace(betalist)
-  #p1 <- p1 + scale_colour_brewer(palette = "Set1")
-  p2 <- bayesplot::mcmc_trace(etalist)
-  #p2 <- p2 + scale_colour_brewer(palette = "Set1")
+  if(plots){
+    p1 <- bayesplot::mcmc_trace(betalist)
+    #p1 <- p1 + scale_colour_brewer(palette = "Set1")
+    p2 <- bayesplot::mcmc_trace(etalist)
+    #p2 <- p2 + scale_colour_brewer(palette = "Set1")
+    print(ggpubr::ggarrange(p1,p2,ncol=1,heights = c(2,1)))
+  }
 
-  print(ggpubr::ggarrange(p1,p2,ncol=1,heights = c(2,1)))
+
+
 
   #p3 <- bayesplot::mcmc_acf(betalist)
   #p4 <- bayesplot::mcmc_acf(etalist)
@@ -1060,9 +847,10 @@ convergence <- function(lg){
   colnames(res_e) <- c("R-hat","ESS")
 
 
-  print(knitr::kable(rbind(res,res_e),"simple",digits=3,options=list(knitr.kable.NA="")))
-  return(invisible(list(knitr::kable(rbind(res,res_e),"simple",digits=3,options=list(knitr.kable.NA="")),
-                        ggpubr::ggarrange(p1,p2,ncol=1,heights = c(2,1)))))
+  # print(knitr::kable(rbind(res,res_e),"simple",digits=3,options=list(knitr.kable.NA="")))
+  # return(invisible(list(knitr::kable(rbind(res,res_e),"simple",digits=3,options=list(knitr.kable.NA="")),
+  #                       ggpubr::ggarrange(p1,p2,ncol=1,heights = c(2,1)))))
+  return(rbind(res,res_e))
 }
 
 #' Variance partition coefficient
@@ -1099,7 +887,7 @@ vpc <- function(lg,covariates,rr=FALSE){
     assign("outl",outl,.GlobalEnv)
   }
 
-  tmp <- suppressWarnings( .plot_lgcp_dat(outl,
+  tmp <- suppressWarnings( plot_lgcp_dat(outl,
                                          grid.data,
                                          lg,
                                          lg$nchains,

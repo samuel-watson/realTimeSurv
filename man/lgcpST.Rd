@@ -22,10 +22,42 @@ lgcpST(
   inclusion = "touching"
 )
 }
+\arguments{
+\item{formula}{a formula object of the form X ~ var1 + var2 etc. The name of the dependent variable must be "X". Only accepts 'simple' formulae, such as the example given.}
+
+\item{xyt}{An object of class stppp}
+
+\item{T}{the time point of interest}
+
+\item{laglength}{the number of previous time points to include in the analysis}
+
+\item{ZmatList}{A list of design matrices Z constructed with getZmat and possibly addTemporalCovariates see the details below and Bayesian_lgcp vignette for details on how to construct this.}
+
+\item{model.priors}{model priors, set using lgcpPrior}
+
+\item{model.inits}{model initial values. The default is NULL, in which case lgcp will use the prior mean to initialise eta and beta will be initialised from an oversispersed glm fit to the data. Otherwise use lgcpInits to specify.}
+
+\item{spatial.covmodel}{choice of spatial covariance function. See ?CovFunction}
+
+\item{cellwidth}{the width of computational cells}
+
+\item{poisson.offset}{A list of SpatialAtRisk objects (of length the number of types) defining lambda_k (see below)}
+
+\item{mcmc.control}{MCMC paramters, see ?mcmcpars}
+
+\item{output.control}{output choice, see ?setoutput}
+
+\item{gradtrunc}{truncation for gradient vector equal to H parameter Moller et al 1998 pp 473. Default is Inf, which means no gradient truncation, which seems to work in most settings.}
+
+\item{ext}{integer multiple by which grid should be extended, default is 2. Generally this will not need to be altered, but if the spatial correlation decays slowly, increasing 'ext' may be necessary.}
+
+\item{inclusion}{criterion for cells being included into observation window. Either 'touching' or 'centroid'. The former, the default, includes all cells that touch the observation window, the latter includes all cells whose centroids are inside the observation window.}
+}
 \description{
 Internal function and alternative to \code{lgcp::lgcpPredictSpatioTemporalPlusPars}.
 }
 \details{
 A copy of \code{lgcp::lgcpPredictSpatioTemporalPlusPars} that parallelises the sampler and
-produces a reduced output and lgcpReal object. See \code{help(lgcpPredictSpatioTemporalPlusPars)}.
+produces a reduced output and lgcpReal object. See \code{help(lgcpPredictSpatioTemporalPlusPars)}
+for more information.
 }

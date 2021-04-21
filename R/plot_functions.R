@@ -1,8 +1,19 @@
 #' Extract data from an lgcpReal object
 #'
-#' Internal function to create plotting data from an lgcpReal object
+#' Helper function to create plotting data from an lgcpReal object
 #'
-.plot_lgcp_dat <- function(samps,
+#'@param samps MCMC samples extracted from lgcpReal object
+#'@param grid.data Grid used for sampling and plotting
+#'@param lg lgcpReal model fit
+#'@param nchains Number of MCMC chains in model fit
+#'@param idx.mapping Matrix specifying plot order of grid cells
+#'@param cellwidth Cellwidth of the grid
+#'@param covariates SpatialPolygonsDataFrame with the original covariate data
+#'@param plotlag Laglength for the plot
+#'@param data.out Logical indicating whether to return data frame with only
+#'plotting data (FALSE) or a list containing each predicted model subcomponent (TRUE)
+#'@export
+plot_lgcp_dat <- function(samps,
                           grid.data,
                           lg,
                           nchains,
@@ -134,7 +145,7 @@ lgcpExtract <- function(dirname, nchains){
 #'
 #' Plot incidence, model components, and their changes over time.
 #'
-#' @param lg An lgcpReal object, output from a call to \code{lgcp}
+#' @param x An lgcpReal object, output from a call to \code{lgcp}
 #' @param covariates A \code{spatialPolygonsDataFrame} covering the area of interest and containing
 #' the covariate and population density data. Typically the same object as specified in the
 #' \code{covariates} argument in the call to \code{lgcp}.
@@ -148,6 +159,7 @@ lgcpExtract <- function(dirname, nchains){
 #' 10,000m^2)
 #' @param rr_lim Integer, for plotting the relative risk, the maximum value of the colour scale. Useful
 #' when comparing multiple plots to put colour gradient on same scale.
+#' @param ... ...
 #' @return A list of two ggplot objects. The first is the incidence (or change in incidence) the
 #' second is a plot of four components: (i) the expected case count in each cell, (ii) the
 #' relative risk due to included covariates, (iii) the relative risk associated with the
@@ -159,35 +171,36 @@ lgcpExtract <- function(dirname, nchains){
 #' @importFrom ggplot2 ggplot aes geom_raster theme theme_bw element_blank scale_fill_viridis_c scale_fill_viridis_d
 #' @importFrom ggplot2 scale_fill_gradientn ggtitle coord_equal element_rect geom_tile facet_wrap geom_point geom_path
 #' @export
-plot.lgcpReal <- function(lg,
+plot.lgcpReal <- function(x,
                           covariates,
                           osm=FALSE,
                           per.days=10000,
                           change.lag=NULL,
                           relative=TRUE,
                           msq = 10000,
-                          rr_lim=NULL){
+                          rr_lim=NULL,
+                          ...){
   if(missing(covariates))stop("Specify the covariate spatial polygons data frame")
-  if(class(lg)!="lgcpReal")stop("lg must be of class lgcpReal")
-  OW <- lgcp::selectObsWindow(lg$xyt, cellwidth = lg$cellwidth)
+  if(!is(x,"lgcpReal"))stop("x must be of class lgcpReal")
+  OW <- lgcp::selectObsWindow(x$xyt, cellwidth = x$cellwidth)
 
   grid.data <- expand.grid(x=OW$xvals,y=OW$yvals)
   idx.mapping <- matrix(1:nrow(grid.data),nrow=length(OW$yvals),ncol=length(OW$xvals))
   idx.mapping <- c(t(apply(idx.mapping,2,rev)))
 
-  if(!exists("outl") |(exists("outl")&&attr(outl, "dirname")!=lg$dirname)){
+  if(!exists("outl") |(exists("outl")&&attr(outl, "dirname")!=x$dirname)){
     print("Extracting posterior samples...")
-    outl <- lgcpExtract(lg$dirname,nrow(lg$lgcpRunInfo$timetaken))
+    outl <- lgcpExtract(x$dirname,nrow(x$lgcpRunInfo$timetaken))
     assign("outl",outl,.GlobalEnv)
   }
 
-  res1 <- suppressWarnings( .plot_lgcp_dat(outl,
+  res1 <- suppressWarnings( plot_lgcp_dat(outl,
                                           grid.data,
-                                          lg,
-                                          lg$nchains,
+                                          x,
+                                          x$nchains,
                                           idx.mapping,
                                           covariates = covariates,
-                                          cellwidth = lg$cellwidth))
+                                          cellwidth = x$cellwidth))
 
   if(is.null(rr_lim)){
     rr_lim1 <- ceiling(max(c(res1$linpred,res1$xpred),na.rm=T))
@@ -202,8 +215,12 @@ plot.lgcpReal <- function(lg,
   rr_title <- "RR"
 
   if(!is.null(change.lag)){
-    reslag <- suppressWarnings(.plot_lgcp_dat(outl,grid.data,lg,lg$nchains,
-                                             idx.mapping,covariates = covariates,
+    reslag <- suppressWarnings(plot_lgcp_dat(outl,
+                                             grid.data,
+                                             x,
+                                             x$nchains,
+                                             idx.mapping,
+                                             covariates = covariates,
                                              plotlag = change.lag))
 
     if(relative){
@@ -238,13 +255,12 @@ plot.lgcpReal <- function(lg,
     if(!is.null(per.days)){
       cent <- sp::coordinates(rgeos::gCentroid(covariates))
       res1$value <- res1$value*per.days/(res1$pop*cos(cent[2]*pi/180)*
-                                           111*1000^2*111.321*lg$cellwidth^2/msq)
+                                           111*1000^2*111.321*x$cellwidth^2/msq)
     }
 
 
   }
 
-  require(ggplot2)
   ppop <- ggplot(data=res1,aes(x=x,y=y,fill=poppred))+
     geom_raster()+
     scale_fill_viridis_c(name="")+
@@ -292,41 +308,50 @@ plot.lgcpReal <- function(lg,
     coord_equal()
 
   if(!is.null(change.lag)){
-    ppred <- ppred + scale_fill_gradientn(name="IRR",colours = c("purple","blue","yellow","orange","red","brown"),
-                                          values = col_vals2,limits=col_lim2)
+    ppred <- ppred + scale_fill_gradientn(name="IRR",
+                                          colours = c("purple","blue","yellow","orange","red","brown"),
+                                          values = col_vals2,
+                                          limits=col_lim2)
   } else {
     ppred <- ppred + scale_fill_viridis_c()
   }
 
   if(osm){
+    if(requireNamespace("ggmap", quietly=TRUE)){
 
-    xrange <- range(ppred$data$x)
-    yrange <- range(ppred$data$y)
-    #our background map
-    mad_map <- get_map2(c(left=xrange[1],bottom=yrange[1],right=xrange[2],top=yrange[2]),
-                        source="stamen",
-                        maptype = "toner")
-    ppred <- ggmap::ggmap(mad_map) +
-      geom_tile(data=ppred$data[!is.na(ppred$data$value),],
-                aes(x=x,y=y,fill=value),alpha=0.4)+
-      theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
+      xrange <- range(ppred$data$x)
+      yrange <- range(ppred$data$y)
+      #our background map
+      mad_map <- get_map2(c(left=xrange[1],bottom=yrange[1],right=xrange[2],top=yrange[2]),
+                          source="stamen",
+                          maptype = "toner")
 
-    if(!is.null(change.lag)){
-      ppred <- ppred + scale_fill_gradientn(name="IRR",colours = c("purple","blue","yellow","orange","red","brown"),
-                                            values = col_vals2,limits=col_lim2)
+      ppred <- ggmap::ggmap(mad_map) +
+        geom_tile(data=ppred$data[!is.na(ppred$data$value),],
+                  aes(x=x,y=y,fill=value),alpha=0.4)+
+        theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
+
+      if(!is.null(change.lag)){
+        ppred <- ppred + scale_fill_gradientn(name="IRR",colours = c("purple","blue","yellow","orange","red","brown"),
+                                              values = col_vals2,limits=col_lim2)
+      } else {
+        ppred <- ppred + scale_fill_viridis_c(name="",option="B")
+      }
     } else {
-      ppred <- ppred + scale_fill_viridis_c(name="",option="B")
+      warning("ggmap package required for osm plotting.")
     }
+
   }
 
   prow <- ggpubr::ggarrange(ppop,plin,px,psd,nrow=2,ncol=2)
-  print(ggpubr::ggarrange(ppred,prow,nrow=1,ncol=2))
+  #print(ggpubr::ggarrange(ppred,prow,nrow=1,ncol=2))
   #prow$scales$scales[[3]] <- c(rr_lim,rr_lim2)
   out <- list(ppred,prow)
   class(out) <- "lgcpRealPlot"
   attr(out,"type") <- "main"
   attr(out,"rr_lim") <- c(rr_lim1,rr_lim2)
-  return(invisible(out))
+  #return(invisible(out))
+  out
 }
 
 #' Hotspot mapping and visualisation
@@ -384,7 +409,7 @@ plot.lgcpReal <- function(lg,
 #' see Details for how to specify.
 #' @param threshold.value A vector or one or two values indicating the threshold(s) for determining
 #' a hotspot. Given in the same order as threshold.var.
-#' @param lables A vector of two or four labels for the hotspots, see Details.
+#' @param labels A vector of two or four labels for the hotspots, see Details.
 #' @param threshold.prob A vector of one or two values specifying the exceedence probabilities.
 #' @param relative A logical value. If one or both of the variable is with respect to a previous time period, whether the comparison
 #' should be relative (TRUE) or absolute (FALSE)
@@ -397,6 +422,7 @@ plot.lgcpReal <- function(lg,
 #' data on further calls to the same \code{lgcpReal} object. This can be removed if needed as
 #' it can be large.
 #' @examples
+#' \dontrun{
 #' p1 <- plot_hotspot(lg,
 #'                    covariates=lsoa,
 #'                    threshold.var=c('poppp+obs+latent'),
@@ -411,6 +437,7 @@ plot.lgcpReal <- function(lg,
 #'                    labels = c('low','high','rising','both'),
 #'                    threshold.prob=0.5,
 #'                    osm = TRUE)
+#' }
 #' @export
 plot_hotspot <- function(lg,
                          covariates,
@@ -450,7 +477,7 @@ plot_hotspot <- function(lg,
     lag1 <- 0
   }
 
-  res1 <- .plot_lgcp_dat(outl,
+  res1 <- plot_lgcp_dat(outl,
                         grid.data,
                         lg,
                         lg$nchains,
@@ -480,7 +507,7 @@ plot_hotspot <- function(lg,
   }
 
   if(lag1>0){
-    res2 <- .plot_lgcp_dat(outl,
+    res2 <- plot_lgcp_dat(outl,
                           grid.data,
                           lg,
                           lg$nchains,
@@ -522,7 +549,7 @@ plot_hotspot <- function(lg,
       lag2 <- 0
     }
 
-    res3 <- .plot_lgcp_dat(outl,
+    res3 <- plot_lgcp_dat(outl,
                           grid.data,
                           lg,
                           lg$nchains,
@@ -551,7 +578,7 @@ plot_hotspot <- function(lg,
     }
 
     if(lag2>0){
-      res4 <- .plot_lgcp_dat(outl,
+      res4 <- plot_lgcp_dat(outl,
                             grid.data,
                             lg,
                             lg$nchains,
@@ -674,21 +701,26 @@ plot_hotspot <- function(lg,
   }
 
   if(osm){
-    xrange <- range(res1$dat1$x)
-    yrange <- range(res1$dat1$y)
+    if(requireNamespace("ggmap",quietly = TRUE)){
+      xrange <- range(res1$dat1$x)
+      yrange <- range(res1$dat1$y)
 
-    #our background map
-    mad_map <- get_map2(c(left=xrange[1],bottom=yrange[1],right=xrange[2],top=yrange[2]),
-                        source="stamen",
-                        maptype = "toner")
-    pclass <- ggmap::ggmap(mad_map) +
-      geom_tile(data=res1$dat1[!is.na(res1$dat1$value),],aes(x=x,y=y,fill=class),alpha=0.4)+
-      scale_fill_viridis_d(name="",option="B")+
-      theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
+      #our background map
+      mad_map <- get_map2(c(left=xrange[1],bottom=yrange[1],right=xrange[2],top=yrange[2]),
+                          source="stamen",
+                          maptype = "toner")
+      pclass <- ggmap::ggmap(mad_map) +
+        geom_tile(data=res1$dat1[!is.na(res1$dat1$value),],aes(x=x,y=y,fill=class),alpha=0.4)+
+        scale_fill_viridis_d(name="",option="B")+
+        theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
+    } else {
+      stop("ggmap is required for osm plotting")
+    }
+
 
   }
 
-  print(ggpubr::ggarrange(pclass,pclass_prop,nrow=1))
+  #print(ggpubr::ggarrange(pclass,pclass_prop,nrow=1))
 
   out <- list(pclass,pclass_prop)
   attr(out,"str") <- threshold.var
@@ -697,19 +729,8 @@ plot_hotspot <- function(lg,
   attr(out,"labs") <- labels
   attr(out,"type") <- "hotspot"
   class(out) <- "lgcpRealPlot"
-  return(invisible(out))
-}
-
-#' (Re-)Plot lgcpRealPlot objects
-#'
-#' Plot lgcpRealPlot output from plot, plot_hotspot, aggregator.
-#'
-#' @param obj Output from a previous call to plotting functions
-#' @examples
-#' plot(p1)
-#' @export
-plot.lgcpRealPlot <- function(obj){
-  return(ggpubr::ggarrange(obj[[1]],obj[[2]],nrow=1))
+  #return(invisible(out))
+  out
 }
 
 #' Summarise lgcp output
@@ -719,10 +740,15 @@ plot.lgcpRealPlot <- function(obj){
 #' @param object An \code{lgcpReal} object from a call to \code{lgcp}
 #' @param linear A logical value indicating whether results should be reported on linear or exponential scales
 #' @param plot A logical value indicating whether to produce plots of the prior and posterior distributions of model parameters
-#' @param prior A logical value indicating whether to report prior distributions in the summary output
+#' @param verbose A logical value indicating whether to print running time and chains
+#' @param ... ...
 #' @return A table with posterior mean, SD, and quantiles of posterior and prior distributions.
 #' @export
-summary.lgcpReal <- function(object,linear=TRUE,plot=TRUE,prior=FALSE){
+summary.lgcpReal <- function(object,
+                             linear=TRUE,
+                             plot=TRUE,
+                             verbose=TRUE,
+                             ...){
   rown <- c("Mean","SD","2.5%","10%","25%","50%","75%","90%","97.5%")
   labs <- c("(Intercept)")
   if(!is.null(object$formulae$form.sp)){
@@ -741,13 +767,16 @@ summary.lgcpReal <- function(object,linear=TRUE,plot=TRUE,prior=FALSE){
                  ))
   rownames(ans) <- labs
   colnames(ans) <- rown
-  cat("Summary for model\n")
-  hrs <- floor(max(object$lgcpRunInfo$timetaken))
-  mins <- round((max(object$lgcpRunInfo$timetaken)%%1)*60,0)
-  cat("Running time: ",hrs," hours ",mins," minutes\n")
-  cat("Number of chains: ",nrow(object$lgcpRunInfo$timetaken),"\n")
-  cat("\n---------------------------------------------------------------------------------\n
-        Posterior samples:\n")
+  if(verbose){
+    cat("Summary for model\n")
+    hrs <- floor(max(object$lgcpRunInfo$timetaken))
+    mins <- round((max(object$lgcpRunInfo$timetaken)%%1)*60,0)
+    cat("Running time: ",hrs," hours ",mins," minutes\n")
+    cat("Number of chains: ",nrow(object$lgcpRunInfo$timetaken),"\n")
+  }
+
+  # cat("\n------------------------------------------------------------------\n
+  #        Posterior samples:\n")
 
   eta.labs <- c("Sigma^2","Spatial range","Temporal range")
   ans.eta <- do.call(data.frame,
@@ -758,16 +787,20 @@ summary.lgcpReal <- function(object,linear=TRUE,plot=TRUE,prior=FALSE){
                      ))
   rownames(ans.eta) <- eta.labs
   colnames(ans.eta) <- rown
-
-  ans[nrow(ans)+1,] <- NA
-  rownames(ans)[nrow(ans)] <- ""
+  #ans <- round(ans,3)
+  #ans[nrow(ans)+1,] <- NA
+  #rownames(ans)[nrow(ans)] <- ""
   if(linear){
-    print(knitr::kable(rbind(ans,ans.eta),"simple",digits=3,options=list(knitr.kable.NA="")))
+    #print(knitr::kable(rbind(ans,ans.eta),"simple",digits=3,options=list(knitr.kable.NA="")))
+    output <- rbind(ans,ans.eta)
   } else {
-    print(knitr::kable(exp(rbind(ans,ans.eta)),"simple",digits=3,options=list(knitr.kable.NA="")))
+    #print(knitr::kable(exp(rbind(ans,ans.eta)),"simple",digits=3,options=list(knitr.kable.NA="")))
+    output <- exp(rbind(ans,ans.eta))
   }
 
-  if(prior){
+  conv.res <- convergence(object,plots=FALSE)
+  output <- cbind(output,conv.res)
+
     ans.prior <- do.call(data.frame,
                          list(
                            mean = object$lgcpRunInfo$priors$betaprior$mean,
@@ -794,19 +827,22 @@ summary.lgcpReal <- function(object,linear=TRUE,plot=TRUE,prior=FALSE){
                              ))
     rownames(ans.prior.eta) <- eta.labs
     colnames(ans.prior.eta) <- rown
+    #ans.prior <- round(ans.prior,3)
+    #ans.prior[nrow(ans.prior)+1,] <- NA
+    #rownames(ans.prior)[nrow(ans.prior)] <- ""
 
-    ans.prior[nrow(ans.prior)+1,] <- NA
-    rownames(ans.prior)[nrow(ans.prior)] <- ""
-
-    cat("\n---------------------------------------------------------------------------------\n
-        Prior distributions:\n")
+    # cat("\n-------------------------------------------------------------\n
+    #    Prior distributions:\n")
 
     if(linear){
-      print(knitr::kable(rbind(ans.prior,ans.prior.eta),"simple",digits=3,options=list(knitr.kable.NA="")))
+      #print(knitr::kable(rbind(ans.prior,ans.prior.eta),"simple",digits=3,options=list(knitr.kable.NA="")))
+      output.prior <- rbind(ans.prior,ans.prior.eta)
+
     } else {
-      print(knitr::kable(exp(rbind(ans.prior,ans.prior.eta)),"simple",digits=3,options=list(knitr.kable.NA="")))
+      #print(knitr::kable(exp(rbind(ans.prior,ans.prior.eta)),"simple",digits=3,options=list(knitr.kable.NA="")))
+      output.prior <- exp(rbind(ans.prior,ans.prior.eta))
     }
-  }
+
 
 
   if(plot){
@@ -858,105 +894,13 @@ summary.lgcpReal <- function(object,linear=TRUE,plot=TRUE,prior=FALSE){
     print(ggpubr::ggarrange(p.beta,p.eta,ncol=1))
   }
 
+    res <- list(posterior = output,
+                prior = output.prior)
+    class(res) <- "lgcpRealSumm"
+    res
+
 }
 
-#' Create HTML summary
-#' @export
-summary_html <- function(object,linear=TRUE){
-  rown <- c("Mean","SD","2.5%","10%","25%","50%","75%","90%","97.5%")
-  labs <- c("(Intercept)")
-  if(!is.null(object$formulae$form.sp)){
-    labs <- c(labs,attr(terms(object$formulae$form.sp),"term.labels"))
-  }
-  if(!is.null(object$formulae$form.sp)){
-    labs.t <- attr(terms(object$formulae$form.t),"term.labels")
-    labs <- c(labs,levels(factor(object$data.t[,labs.t]))[-1])
-  }
-  #Posteriors for bet
-  ans <- do.call(data.frame,
-                 list(
-                   mean = colMeans(object$beta),
-                   SD = apply(object$beta,2,sd),
-                   q = t(apply(object$beta,2,function(i)quantile(i,c(0.025,0.1,0.25,0.5,0.75,0.9,0.975))))
-                 ))
-  rownames(ans) <- labs
-  colnames(ans) <- rown
-
-  hrs <- floor(max(object$lgcpRunInfo$timetaken))
-  mins <- round((max(object$lgcpRunInfo$timetaken)%%1)*60,0)
-  model.message <- paste0(
-    "**Summary for model**\n\n",
-    "Total running time: ",hrs," hours ",mins," minutes\n\n",
-    "Number of chains: ",nrow(object$lgcpRunInfo$timetaken),"\n\n"
-  )
-
-  eta.labs <- c("Sigma^2","Spatial range","Temporal range")
-  ans.eta <- do.call(data.frame,
-                     list(
-                       mean = colMeans(object$eta),
-                       SD = apply(object$eta,2,sd),
-                       q = t(apply(object$eta,2,function(i)quantile(i,c(0.025,0.1,0.25,0.5,0.75,0.9,0.975))))
-                     ))
-  rownames(ans.eta) <- eta.labs
-  colnames(ans.eta) <- rown
-
-  ans[nrow(ans)+1,] <- NA
-  rownames(ans)[nrow(ans)] <- ""
-  if(linear){
-    out1 <- knitr::kable(rbind(ans,ans.eta),"html",caption = "Model parameters",digits=3,options=list(knitr.kable.NA=""))
-  } else {
-    out1 <- knitr::kable(exp(rbind(ans,ans.eta)),"html",caption = "Model parameters",digits=3,options=list(knitr.kable.NA=""))
-  }
-
-  niter <- nrow(object$beta)
-  betadf <- reshape2::melt(object$beta)
-  betadf$post <- "Posterior"
-  betadf2 <- reshape2::melt(sapply(1:ncol(object$beta),
-                                   function(i)rnorm(niter,
-                                                    object$lgcpRunInfo$priors$betaprior$mean[i],
-                                                    sqrt(diag(object$lgcpRunInfo$priors$betaprior$variance))[i])))
-  betadf2$post <- "Prior"
-  betadf <- suppressWarnings(rbind(betadf,betadf2))
-  betadf$varname <- labs[betadf$Var2]
-  if(!linear){
-    betadf$value <- exp(betadf$value)
-  }
-
-  p.beta <- ggplot(data=betadf,aes(x=value,lty=post,color=post))+
-    geom_density()+
-    facet_wrap(~varname,scale="free")+
-    theme_bw()+
-    theme(panel.grid=element_blank())+
-    scale_linetype_discrete(name="")+
-    scale_color_discrete(name="")+
-    ggtitle("Beta parameters")
-
-  etadf <- reshape2::melt(object$eta)
-  etadf$post <- "Posterior"
-  etadf2 <- reshape2::melt(sapply(1:ncol(object$eta),
-                                  function(i)rnorm(niter,
-                                                   object$lgcpRunInfo$priors$etaprior$mean[i],
-                                                   sqrt(diag(object$lgcpRunInfo$priors$etaprior$variance))[i])))
-  etadf2$post <- "Prior"
-  etadf <- suppressWarnings(rbind(etadf,etadf2))
-  etadf$varname <- eta.labs[etadf$Var2]
-  if(!linear){
-    etadf$value <- exp(etadf$value)
-  }
-
-  p.eta <- ggplot(data=etadf,aes(x=value,lty=post,color=post))+
-    geom_density()+
-    facet_wrap(~varname,scale="free")+
-    theme_bw()+
-    theme(panel.grid=element_blank())+
-    scale_linetype_discrete(name="")+
-    scale_color_discrete(name="")+
-    ggtitle("Eta parameters")
-
-  out2 <- ggpubr::ggarrange(p.beta,p.eta,ncol=1,heights = c(2,1))
-  return(list(kableExtra::kable_styling(out1,bootstrap_options = c("striped", "hover")),
-              out2,model.message))
-}
 
 #' Aggregate lgcp output to larger geography
 #'
@@ -972,9 +916,13 @@ summary_html <- function(object,linear=TRUE){
 #' @param osm A logical value indicating whether to overlay the plot on an OpenStreetMap map
 #' @return An lgcpRealPlot object comprising a list of two ggplot objects.
 #' @export
-aggregator <- function(obj,aggpoly,osm=FALSE){
-  if(!(class(aggpoly)=="SpatialPolygons"|class(aggpoly)=="SpatialPolygonsDataFrame"))
-    stop("aggpoly must be of class ''SpatialPolygons or SpatialPolygonsDataFrame")
+aggregator <- function(obj,
+                       aggpoly,
+                       osm=FALSE){
+
+  if(!is(obj,"lgcpRealPlot"))stop("obj should be an lgcpRealPlot")
+  if((!is(aggpoly,"SpatialPolygons")|!is(aggpoly,"SpatialPolygonsDataFrame")))
+    stop("aggpoly must be of class SpatialPolygons or SpatialPolygonsDataFrame")
   if(nrow(obj[[1]]$data)<10)stop("Please replot without the osm option and add the OSM option to
                                  this function.")
 
@@ -988,7 +936,7 @@ aggregator <- function(obj,aggpoly,osm=FALSE){
   dat_area <- dat2@polygons[[1]]@area
 
 
-  if(class(aggpoly)=="SpatialPolygonsDataFrame"){
+  if(is(aggpoly,"SpatialPolygonsDataFrame")){
     map <- as(aggpoly,"SpatialPolygons")
   } else {
     map <- aggpoly
@@ -1086,18 +1034,22 @@ aggregator <- function(obj,aggpoly,osm=FALSE){
       ggtitle("Posterior SD")
 
     if(osm){
+      if(requireNamespace("ggmap",quietly=TRUE)){
+        xrange <- range(obj[[1]]$data$x)
+        yrange <- range(obj[[1]]$data$y)
+        #our background map
+        mad_map <- get_map2(c(left=xrange[1],bottom=yrange[1],right=xrange[2],top=yrange[2]),
+                            source="stamen",
+                            maptype = "toner")
+        ppred <- ggmap::ggmap(mad_map) +
+          ggspatial::layer_spatial(data=res,aes(fill=value),alpha=0.4)+
+          theme_bw()+
+          theme(panel.grid = element_blank())+
+          ggtitle(obj[[1]]$labels$title)
 
-      xrange <- range(obj[[1]]$data$x)
-      yrange <- range(obj[[1]]$data$y)
-      #our background map
-      mad_map <- get_map2(c(left=xrange[1],bottom=yrange[1],right=xrange[2],top=yrange[2]),
-                          source="stamen",
-                          maptype = "toner")
-      ppred <- ggmap::ggmap(mad_map) +
-        ggspatial::layer_spatial(data=res,aes(fill=value),alpha=0.4)+
-        theme_bw()+
-        theme(panel.grid = element_blank())+
-        ggtitle(obj[[1]]$labels$title)
+      } else {
+        stop("ggmap required for osm plotting.")
+      }
 
     }
 
@@ -1114,7 +1066,7 @@ aggregator <- function(obj,aggpoly,osm=FALSE){
 
     prow <- ggpubr::ggarrange(ppop,plin,px,psd,nrow=2,ncol=2)
     out <- list(ppred,prow)
-    print(ggpubr::ggarrange(ppred,prow,nrow=1,ncol=2))
+    #print(ggpubr::ggarrange(ppred,prow,nrow=1,ncol=2))
   } else if(attr(obj,"type")=="hotspot"){
     if(length(attr(obj,"str"))==1){
 
@@ -1173,29 +1125,33 @@ aggregator <- function(obj,aggpoly,osm=FALSE){
     }
 
     if(osm){
+      if(requireNamespace("ggmap",quietly = TRUE)){
+        xrange <- range(obj[[1]]$data$x)
+        yrange <- range(obj[[1]]$data$y)
+        #our background map
+        mad_map <- get_map2(c(left=xrange[1],bottom=yrange[1],right=xrange[2],top=yrange[2]),
+                            source="stamen",
+                            maptype = "toner")
+        pclass <- ggmap::ggmap(mad_map) +
+          ggspatial::layer_spatial(data=res,aes(fill=class),alpha=0.4)+
+          scale_fill_viridis_d()+
+          theme_bw()+
+          theme(panel.grid = element_blank())+
+          ggtitle(paste0("Classification if Pr(",attr(obj,"str"),">",attr(obj,"vals"),") > ",round(attr(obj,"threshold")*100,0),"%"))
 
-      xrange <- range(obj[[1]]$data$x)
-      yrange <- range(obj[[1]]$data$y)
-      #our background map
-      mad_map <- get_map2(c(left=xrange[1],bottom=yrange[1],right=xrange[2],top=yrange[2]),
-                          source="stamen",
-                          maptype = "toner")
-      pclass <- ggmap::ggmap(mad_map) +
-        ggspatial::layer_spatial(data=res,aes(fill=class),alpha=0.4)+
-        scale_fill_viridis_d()+
-        theme_bw()+
-        theme(panel.grid = element_blank())+
-        ggtitle(paste0("Classification if Pr(",attr(obj,"str"),">",attr(obj,"vals"),") > ",round(attr(obj,"threshold")*100,0),"%"))
+      } else {
+        stop("ggmap required for osm plotting.")
+      }
 
     }
 
     out <- list(pclass,ppred)
-    print(ggpubr::ggarrange(pclass,ppred,nrow=1))
+    #print(ggpubr::ggarrange(pclass,ppred,nrow=1))
   }
 
   class(out) <- "lgcpRealPlot"
-
-  return(invisible(out))
+  out
+  #return(invisible(out))
 
 }
 
@@ -1204,190 +1160,226 @@ aggregator <- function(obj,aggpoly,osm=FALSE){
 #' An alternative to \code{ggmap}'s \code{get_map} function
 #'
 #' An error in the CRAN available version of get_map means it will only plot Google Maps objects rather than Stamen or OSM maps. When ggmap is
-#' updated this function will be removed. See \code{help(get_map)} for details.
+#' updated this function will be removed. See \code{help(get_map)} for more details.
+#'
+#' @param location an address, longitude/latitude pair (in that order), or
+#'   left/bottom/right/top bounding box
+#' @param zoom map zoom, an integer from 3 (continent) to 21 (building), default
+#'   value 10 (city).  openstreetmaps limits a zoom of 18, and the limit on
+#'   stamen maps depends on the maptype.  "auto" automatically determines the
+#'   zoom for bounding box specifications, and is defaulted to 10 with
+#'   center/zoom specifications.  maps of the whole world currently not
+#'   supported.
+#' @param scale scale argument of get_googlemap() or get_openstreetmap()
+#' @param maptype character string providing map theme. options available are
+#'   "terrain", "terrain-background", "satellite", "roadmap", and "hybrid"
+#'   (google maps), "terrain", "watercolor", and "toner" (stamen maps)
+#' @param source Google Maps ("google"), OpenStreetMap ("osm"), Stamen Maps
+#'   ("stamen")
+#' @param force force new map (don't use archived version)
+#' @param messaging turn messaging on/off
+#' @param urlonly return url only
+#' @param filename destination file for download (file extension added according
+#'   to format). Default \code{NULL} means a random tempfile().
+#' @param crop (stamen and cloudmade maps) crop tiles to bounding box
+#' @param color color ("color") or black-and-white ("bw")
+#' @param language language for google maps
+#' @param ... ...
+#' @return a ggmap object (a classed raster object with a bounding box
+#'   attribute)
 #' @export
 get_map2 <- function (location = c(lon = -95.3632715, lat = 29.7632836),
-                      zoom = "auto", scale = "auto", maptype = c("terrain",
-                                                                 "terrain-background", "satellite", "roadmap",
-                                                                 "hybrid", "toner", "watercolor", "terrain-labels",
-                                                                 "terrain-lines", "toner-2010", "toner-2011",
-                                                                 "toner-background", "toner-hybrid", "toner-labels",
-                                                                 "toner-lines", "toner-lite"), source = c("google",
-                                                                                                          "osm", "stamen"), force = ifelse(source ==
-                                                                                                                                             "google", TRUE, FALSE), messaging = FALSE, urlonly = FALSE,
-                      filename = NULL, crop = TRUE, color = c("color", "bw"),
+                      zoom = "auto",
+                      scale = "auto",
+                      maptype = c("terrain","terrain-background", "satellite", "roadmap",
+                                  "hybrid", "toner", "watercolor", "terrain-labels",
+                                  "terrain-lines", "toner-2010", "toner-2011",
+                                  "toner-background", "toner-hybrid", "toner-labels",
+                                  "toner-lines", "toner-lite"),
+                      source = c("google","osm", "stamen"),
+                      force = ifelse(source == "google", TRUE, FALSE),
+                      messaging = FALSE,
+                      urlonly = FALSE,
+                      filename = NULL,
+                      crop = TRUE,
+                      color = c("color", "bw"),
                       language = "en-EN", ...)
 {
-  args <- as.list(match.call(expand.dots = TRUE)[-1])
-  if ("verbose" %in% names(args)) {
-    .Deprecated(msg = "verbose argument deprecated, use messaging.")
-    messaging <- eval(args$verbose)
-  }
-  if ("center" %in% names(args)) {
-    .Deprecated(msg = "center argument deprecated, use location.")
-    location <- eval(args$center)
-  }
-  source <- match.arg(source)
-  color <- match.arg(color)
-  if (missing(maptype)) {
-    if (source != "cloudmade") {
-      maptype <- "terrain"
+  if(requireNamespace("ggmap",quietly = TRUE)){
+    args <- as.list(match.call(expand.dots = TRUE)[-1])
+    if ("verbose" %in% names(args)) {
+      .Deprecated(msg = "verbose argument deprecated, use messaging.")
+      messaging <- eval(args$verbose)
     }
-    else {
-      maptype <- 1
+    if ("center" %in% names(args)) {
+      .Deprecated(msg = "center argument deprecated, use location.")
+      location <- eval(args$center)
     }
-  }
-  if (source == "stamen") {
-    if (!(maptype %in% c("terrain", "terrain-background",
-                         "terrain-labels", "terrain-lines", "toner",
-                         "toner-2010", "toner-2011", "toner-background",
-                         "toner-hybrid", "toner-labels", "toner-lines",
-                         "toner-lite", "watercolor"))) {
-      stop("invalid stamen maptype, see ?get_stamenmap",
-           call. = FALSE)
-    }
-  }
-  if (source == "google" & (maptype %in% c("terrain-background",
-                                           "terrain-labels", "terrain-lines", "toner",
-                                           "toner-2010", "toner-2011", "toner-background",
-                                           "toner-hybrid", "toner-labels", "toner-lines",
-                                           "toner-lite", "watercolor"))) {
-    message(paste0("maptype = \"", maptype, "\" is only available with source = \"stamen\"."))
-    message(paste0("resetting to source = \"stamen\"..."))
-    source <- "stamen"
-  }
-  location_stop <- TRUE
-  if (is.character(location) && length(location) == 1) {
-    location_type <- "address"
-    location_stop <- FALSE
-  }
-  if (is.data.frame(location) && ncol(location) == 2) {
-    location <- colMeans(location)
-  }
-  if (is.numeric(location) && length(location) == 2) {
-    location_type <- "lonlat"
-    location_stop <- FALSE
-    if (!is.null(names(location))) {
-      loc_names <- names(location)
-      if (all(loc_names == c("long", "lat"))) {
-        names(location) <- c("lon", "lat")
+    source <- match.arg(source)
+    color <- match.arg(color)
+    if (missing(maptype)) {
+      if (source != "cloudmade") {
+        maptype <- "terrain"
       }
-      else if (all(loc_names == c("lat", "lon"))) {
-        message("note : locations should be specified in the lon/lat format, not lat/lon.")
-        location <- location[c("lon", "lat")]
-      }
-      else if (all(loc_names == c("lat", "long"))) {
-        message("note : locations should be specified in the lon/lat format, not lat/lon.")
-        location <- location[c("long", "lat")]
-        names(location) <- c("lon", "lat")
+      else {
+        maptype <- 1
       }
     }
-    else {
-      names(location) <- c("lon", "lat")
-    }
-  }
-  if (is.numeric(location) && length(location) == 4) {
-    location_type <- "bbox"
-    location_stop <- FALSE
-    #source <- "stamen"
-    #maptype <- "terrain"
-    if (length(names(location)) > 0) {
-      if (!all(names(location) %in% c("left", "bottom",
-                                      "right", "top"))) {
-        stop("bounding boxes should have name left, bottom, right, top)",
+    if (source == "stamen") {
+      if (!(maptype %in% c("terrain", "terrain-background",
+                           "terrain-labels", "terrain-lines", "toner",
+                           "toner-2010", "toner-2011", "toner-background",
+                           "toner-hybrid", "toner-labels", "toner-lines",
+                           "toner-lite", "watercolor"))) {
+        stop("invalid stamen maptype, see ?get_stamenmap",
              call. = FALSE)
       }
-      location <- location[c("left", "bottom",
-                             "right", "top")]
     }
-    else {
-      names(location) <- c("left", "bottom",
-                           "right", "top")
+    if (source == "google" & (maptype %in% c("terrain-background",
+                                             "terrain-labels", "terrain-lines", "toner",
+                                             "toner-2010", "toner-2011", "toner-background",
+                                             "toner-hybrid", "toner-labels", "toner-lines",
+                                             "toner-lite", "watercolor"))) {
+      message(paste0("maptype = \"", maptype, "\" is only available with source = \"stamen\"."))
+      message(paste0("resetting to source = \"stamen\"..."))
+      source <- "stamen"
     }
-  }
-  if (location_stop) {
-    stop("improper location specification, see ?get_map.",
-         call. = F)
-  }
-  if (zoom == "auto" && location_type == "bbox") {
-    if (zoom == "auto") {
-      lon_range <- location[c("left", "right")]
-      lat_range <- location[c("bottom", "top")]
-      if (missing(zoom)) {
-        lonlength <- diff(lon_range)
-        latlength <- diff(lat_range)
-        zoomlon <- ceiling(log2(360 * 2/lonlength))
-        zoomlat <- ceiling(log2(180 * 2/latlength))
-        zoom <- max(zoomlon, zoomlat)
+    location_stop <- TRUE
+    if (is.character(location) && length(location) == 1) {
+      location_type <- "address"
+      location_stop <- FALSE
+    }
+    if (is.data.frame(location) && ncol(location) == 2) {
+      location <- colMeans(location)
+    }
+    if (is.numeric(location) && length(location) == 2) {
+      location_type <- "lonlat"
+      location_stop <- FALSE
+      if (!is.null(names(location))) {
+        loc_names <- names(location)
+        if (all(loc_names == c("long", "lat"))) {
+          names(location) <- c("lon", "lat")
+        }
+        else if (all(loc_names == c("lat", "lon"))) {
+          message("note : locations should be specified in the lon/lat format, not lat/lon.")
+          location <- location[c("lon", "lat")]
+        }
+        else if (all(loc_names == c("lat", "long"))) {
+          message("note : locations should be specified in the lon/lat format, not lat/lon.")
+          location <- location[c("long", "lat")]
+          names(location) <- c("lon", "lat")
+        }
+      }
+      else {
+        names(location) <- c("lon", "lat")
       }
     }
-  }
-  else if (zoom == "auto" && location_type != "bbox") {
-    zoom = 10
-  }
-  if (scale == "auto") {
-    if (source == "google")
-      scale <- 2
-    if (source == "osm")
-      scale <- ggmap::OSM_scale_lookup(zoom)
-  }
-  if (source == "google") {
-    if (location_type == "bbox") {
-      warning("bounding box given to google - spatial extent only approximate.",
-              call. = FALSE, immediate. = TRUE)
-      message("converting bounding box to center/zoom specification. (experimental)")
-      user_bbox <- location
-      location <- c(lon = mean(location[c("left",
-                                          "right")]), lat = mean(location[c("bottom",
-                                                                            "top")]))
+    if (is.numeric(location) && length(location) == 4) {
+      location_type <- "bbox"
+      location_stop <- FALSE
+      #source <- "stamen"
+      #maptype <- "terrain"
+      if (length(names(location)) > 0) {
+        if (!all(names(location) %in% c("left", "bottom",
+                                        "right", "top"))) {
+          stop("bounding boxes should have name left, bottom, right, top)",
+               call. = FALSE)
+        }
+        location <- location[c("left", "bottom",
+                               "right", "top")]
+      }
+      else {
+        names(location) <- c("left", "bottom",
+                             "right", "top")
+      }
     }
-    map <- ggmap::get_googlemap(center = location, zoom = zoom,
-                         maptype = maptype, scale = scale, messaging = messaging,
-                         urlonly = urlonly, force = force, filename = filename,
-                         color = color, language = language)
-    if (FALSE) {
-      bb <- attr(map, "bb")
-      mbbox <- c(left = bb$ll.lon, bottom = bb$ll.lat,
-                 right = bb$ur.lon, top = bb$ur.lat)
-      size <- dim(map)
+    if (location_stop) {
+      stop("improper location specification, see ?get_map.",
+           call. = F)
+    }
+    if (zoom == "auto" && location_type == "bbox") {
+      if (zoom == "auto") {
+        lon_range <- location[c("left", "right")]
+        lat_range <- location[c("bottom", "top")]
+        if (missing(zoom)) {
+          lonlength <- diff(lon_range)
+          latlength <- diff(lat_range)
+          zoomlon <- ceiling(log2(360 * 2/lonlength))
+          zoomlat <- ceiling(log2(180 * 2/latlength))
+          zoom <- max(zoomlon, zoomlat)
+        }
+      }
+    }
+    else if (zoom == "auto" && location_type != "bbox") {
+      zoom = 10
+    }
+    if (scale == "auto") {
+      if (source == "google")
+        scale <- 2
+      if (source == "osm")
+        scale <- ggmap::OSM_scale_lookup(zoom)
+    }
+    if (source == "google") {
       if (location_type == "bbox") {
-        slon <- seq(mbbox["left"], mbbox["right"],
-                    length.out = size[1])
-        slat <- seq(mbbox["top"], mbbox["bottom"],
-                    length.out = size[2])
-        keep_x_ndcs <- which(user_bbox["left"] <=
-                               slon & slon <= user_bbox["right"])
-        keep_y_ndcs <- which(user_bbox["bottom"] <=
-                               slat & slat <= user_bbox["top"])
-        map <- map[keep_y_ndcs, keep_x_ndcs]
-        class(map) <- c("ggmap", "raster")
-        attr(map, "bb") <- data.frame(ll.lat = user_bbox["bottom"],
-                                      ll.lon = user_bbox["left"], ur.lat = user_bbox["top"],
-                                      ur.lon = user_bbox["right"])
+        warning("bounding box given to google - spatial extent only approximate.",
+                call. = FALSE, immediate. = TRUE)
+        message("converting bounding box to center/zoom specification. (experimental)")
+        user_bbox <- location
+        location <- c(lon = mean(location[c("left",
+                                            "right")]), lat = mean(location[c("bottom",
+                                                                              "top")]))
       }
+      map <- ggmap::get_googlemap(center = location, zoom = zoom,
+                                  maptype = maptype, scale = scale, messaging = messaging,
+                                  urlonly = urlonly, force = force, filename = filename,
+                                  color = color, language = language)
+      if (FALSE) {
+        bb <- attr(map, "bb")
+        mbbox <- c(left = bb$ll.lon, bottom = bb$ll.lat,
+                   right = bb$ur.lon, top = bb$ur.lat)
+        size <- dim(map)
+        if (location_type == "bbox") {
+          slon <- seq(mbbox["left"], mbbox["right"],
+                      length.out = size[1])
+          slat <- seq(mbbox["top"], mbbox["bottom"],
+                      length.out = size[2])
+          keep_x_ndcs <- which(user_bbox["left"] <=
+                                 slon & slon <= user_bbox["right"])
+          keep_y_ndcs <- which(user_bbox["bottom"] <=
+                                 slat & slat <= user_bbox["top"])
+          map <- map[keep_y_ndcs, keep_x_ndcs]
+          class(map) <- c("ggmap", "raster")
+          attr(map, "bb") <- data.frame(ll.lat = user_bbox["bottom"],
+                                        ll.lon = user_bbox["left"], ur.lat = user_bbox["top"],
+                                        ur.lon = user_bbox["right"])
+        }
+      }
+      return(map)
     }
-    return(map)
-  }
-  if (source == "osm") {
-    if (location_type != "bbox") {
-      gm <- ggmap::get_googlemap(center = location, zoom = zoom,
-                          filename = filename)
-      location <- as.numeric(attr(gm, "bb"))[c(2,
-                                               1, 4, 3)]
+    if (source == "osm") {
+      if (location_type != "bbox") {
+        gm <- ggmap::get_googlemap(center = location, zoom = zoom,
+                                   filename = filename)
+        location <- as.numeric(attr(gm, "bb"))[c(2,
+                                                 1, 4, 3)]
+      }
+      return(ggmap::get_openstreetmap(bbox = location, scale = scale,
+                                      messaging = messaging, urlonly = urlonly, filename = filename,
+                                      color = color))
     }
-    return(ggmap::get_openstreetmap(bbox = location, scale = scale,
-                             messaging = messaging, urlonly = urlonly, filename = filename,
-                             color = color))
-  }
-  if (source == "stamen") {
-    if (location_type != "bbox") {
-      gm <- ggmap::get_googlemap(center = location, zoom = zoom,
-                          filename = filename)
-      location <- as.numeric(attr(gm, "bb"))[c(2,
-                                               1, 4, 3)]
+    if (source == "stamen") {
+      if (location_type != "bbox") {
+        gm <- ggmap::get_googlemap(center = location, zoom = zoom,
+                                   filename = filename)
+        location <- as.numeric(attr(gm, "bb"))[c(2,
+                                                 1, 4, 3)]
+      }
+      return(ggmap::get_stamenmap(bbox = location, zoom = zoom, maptype = maptype,
+                                  crop = crop, messaging = messaging, urlonly = urlonly,
+                                  filename = filename, force = force, color = color))
     }
-    return(ggmap::get_stamenmap(bbox = location, zoom = zoom, maptype = maptype,
-                         crop = crop, messaging = messaging, urlonly = urlonly,
-                         filename = filename, force = force, color = color))
+  } else {
+    stop("ggmap package required for osm plotting.")
   }
+
 }

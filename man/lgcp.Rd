@@ -11,7 +11,7 @@ lgcp(
   t.covs = NULL,
   pop.var = NULL,
   boundary,
-  covariates,
+  covariates = NULL,
   cellwidth,
   laglength,
   dirname,
