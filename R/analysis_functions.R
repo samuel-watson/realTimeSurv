@@ -105,6 +105,8 @@ get_day <- function(df){
 #' @param gradtrunc truncation for gradient vector equal to H parameter Moller et al 1998 pp 473. Default is Inf, which means no gradient truncation, which seems to work in most settings.
 #' @param ext integer multiple by which grid should be extended, default is 2. Generally this will not need to be altered, but if the spatial correlation decays slowly, increasing 'ext' may be necessary.
 #' @param inclusion criterion for cells being included into observation window. Either 'touching' or 'centroid'. The former, the default, includes all cells that touch the observation window, the latter includes all cells whose centroids are inside the observation window.
+#' @importFrom lgcp selectObsWindow spatialAtRisk genFFTgrid fftinterpolate cov.interp.fft
+#' @importFrom lgcp mcmcLoop getCounts nullFunction MALAlgcpSpatioTemporal.PlusPars
 #' @export
 lgcpST <- function (formula, xyt, T, laglength, ZmatList = NULL, model.priors,
                     model.inits = lgcpInits(), spatial.covmodel, cellwidth = NULL,
@@ -155,7 +157,7 @@ lgcpST <- function (formula, xyt, T, laglength, ZmatList = NULL, model.priors,
     approxcw <- diff(xyt$window$xrange)/gridsize[1]
     cwseq <- seq(approxcw/2, 2 * approxcw, length.out = 500)
     cwfun <- function(cw) {
-      ow <- selectObsWindow(xyt, cw)
+      ow <- lgcp::selectObsWindow(xyt, cw)
       return(c(ow$M, ow$N))
     }
     gsmat <- t(sapply(cwseq, cwfun))
@@ -188,7 +190,7 @@ lgcpST <- function (formula, xyt, T, laglength, ZmatList = NULL, model.priors,
   }
   tdiff <- c(Inf, diff(aggtimes))
   numt <- length(tdiff)
-  ow <- selectObsWindow(xyt, cellwidth)
+  ow <- lgcp::selectObsWindow(xyt, cellwidth)
   xyt <- ow$xyt
   M <- ow$M
   N <- ow$N
@@ -232,7 +234,7 @@ lgcpST <- function (formula, xyt, T, laglength, ZmatList = NULL, model.priors,
   spatial <- list()
   for (i in 1:numt) {
     if (!inherits(poisson.offset[[i]], "spatialAtRisk")) {
-      spatial[[i]] <- spatialAtRisk(poisson.offset[[i]])
+      spatial[[i]] <- lgcp::spatialAtRisk(poisson.offset[[i]])
     }
     else {
       spatial[[i]] <- poisson.offset[[i]]
@@ -252,7 +254,7 @@ lgcpST <- function (formula, xyt, T, laglength, ZmatList = NULL, model.priors,
     gridobj <- attr(ZmatList[[1]], "gridobj")
   }
   else {
-    gridobj <- genFFTgrid(study.region = study.region, M = M,
+    gridobj <- lgcp::genFFTgrid(study.region = study.region, M = M,
                           N = N, ext = ext, inclusion = inclusion)
   }
   del1 <- gridobj$del1
@@ -272,7 +274,7 @@ lgcpST <- function (formula, xyt, T, laglength, ZmatList = NULL, model.priors,
   d <- sqrt(((x[2] - x[1]) * dxidx)^2 + ((y[2] - y[1]) * dyidx)^2)
   spatial.offset <- list()
   for (i in 1:numt) {
-    spatial.offset[[i]] <- fftinterpolate(spatial[[i]], mcens,
+    spatial.offset[[i]] <- lgcp::fftinterpolate(spatial[[i]], mcens,
                                           ncens, ext = ext)
     spatial.offset[[i]] <- spatial.offset[[i]] * cellInside
   }
@@ -281,7 +283,7 @@ lgcpST <- function (formula, xyt, T, laglength, ZmatList = NULL, model.priors,
     ZmatList <- list()
     if (!inherits(regionalcovariates, "list") & !inherits(pixelcovariates,
                                                           "list")) {
-      ZmatList <- cov.interp.fft(formula = formula, W = study.region,
+      ZmatList <- lgcp::cov.interp.fft(formula = formula, W = study.region,
                                  regionalcovariates = regionalcovariates, pixelcovariates = pixelcovariates,
                                  mcens = mcens[1:M], ncens = ncens[1:N], cellInside = cellInside[1:M,
                                                                                                  1:N])
@@ -293,7 +295,7 @@ lgcpST <- function (formula, xyt, T, laglength, ZmatList = NULL, model.priors,
         stop("regionalcovariates and pixelcovariates must EITHER both be list objects OR SpatialPolygonsDataFrame and SpatialPixelsDataFrame objects respectively.")
       }
       else {
-        ZmatList[[i]] <- cov.interp.fft(formula = formula,
+        ZmatList[[i]] <- lgcp::cov.interp.fft(formula = formula,
                                         W = study.region, regionalcovariates = regionalcovariates[[i]],
                                         pixelcovariates = pixelcovariates[[i]], mcens = mcens[1:M],
                                         ncens = ncens[1:N], cellInside = cellInside[1:M,
@@ -324,7 +326,7 @@ lgcpST <- function (formula, xyt, T, laglength, ZmatList = NULL, model.priors,
       }
     }
   }
-  mLoop = mcmcLoop(N = mcmc.control$mala.length, burnin = mcmc.control$burnin,
+  mLoop = lgcp::mcmcLoop(N = mcmc.control$mala.length, burnin = mcmc.control$burnin,
                    thin = mcmc.control$retain, progressor = mcmcProgressTextBar)
   nsamp <- floor((mLoop$N - mLoop$burnin)/mLoop$thin)
   if (!is.null(output.control$gridfunction) & class(output.control$gridfunction)[1] ==
@@ -347,7 +349,7 @@ lgcpST <- function (formula, xyt, T, laglength, ZmatList = NULL, model.priors,
   nis <- list()
   for (i in 1:numt) {
     if (sum(xyt$t == aggtimes[i]) > 0) {
-      nis[[i]] <- getCounts(xyt = xyt, subset = (xyt$t ==
+      nis[[i]] <- lgcp::getCounts(xyt = xyt, subset = (xyt$t ==
                                                    aggtimes[i]), M = M, N = N, ext = ext)
     }
     else {
@@ -364,13 +366,13 @@ lgcpST <- function (formula, xyt, T, laglength, ZmatList = NULL, model.priors,
   }
   gridfun <- output.control$gridfunction
   if (is.null(gridfun)) {
-    gridfun <- nullFunction()
+    gridfun <- lgcp::nullFunction()
   }
   gridav <- output.control$gridmeans
   if (is.null(gridav)) {
-    gridav <- nullAverage()
+    gridav <- lgcp::nullAverage()
   }
-  lg <- MALAlgcpSpatioTemporal.PlusPars(mcmcloop = mLoop, inits = mcmc.control$inits,
+  lg <- lgcp::MALAlgcpSpatioTemporal.PlusPars(mcmcloop = mLoop, inits = mcmc.control$inits,
                                         adaptivescheme = mcmc.control$adaptivescheme, M = M,
                                         N = N, Mext = Mext, Next = Next, mcens = mcens, ncens = ncens,
                                         formula = formula, ZmatList = ZmatList, model.priors = model.priors,
@@ -688,6 +690,7 @@ lgcp <- function(data,
   #parallel::clusterEvalQ(cl,library(realTimeSurv))
   parallel::clusterEvalQ(cl,library(lgcp))
   parallel::clusterCall(cl, assign, "lgcpST", lgcpST, envir = .GlobalEnv)
+  #parallel::clusterCall(cl, requireNamespace("lgcp"))
 
   parallel::clusterExport(cl,c('form','xyt','T','laglength','Zmat','priors','INITS',
                      'CF','cellwidth','dirname','mala.pars',"offsetList"),
@@ -704,10 +707,10 @@ lgcp <- function(data,
                                            model.inits = INITS,
                                            spatial.covmodel = CF,
                                            cellwidth = cellwidth,
-                                           mcmc.control = mcmcpars(mala.length = mala.pars[1],
+                                           mcmc.control = lgcp::mcmcpars(mala.length = mala.pars[1],
                                                                    burnin = mala.pars[2],
                                                                    retain = mala.pars[3],
-                                                                   adaptivescheme = andrieuthomsh(inith = 1,
+                                                                   adaptivescheme = lgcp::andrieuthomsh(inith = 1,
                                                                                                   alpha = 0.5,
                                                                                                   C = 1,
                                                                                                   targetacceptance = 0.574)),

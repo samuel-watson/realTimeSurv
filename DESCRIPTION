@@ -19,8 +19,8 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.1
 Imports:
     ncdf4,
+    methods,
     sp,
-    lgcp,
     rgeos,
     ggplot2,
     ggpubr,
@@ -40,7 +40,7 @@ Imports:
     coda,
     bayesplot
 Depends: 
-    R (>= 2.10)
+    R (>= 2.10),
+    lgcp (>= 1.7)
 Suggests: 
-    testthat,
-    ggmap
+    testthat

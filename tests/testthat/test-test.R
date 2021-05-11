@@ -11,7 +11,7 @@ test_that("data sim works.",{
   square_pop <- as(square_pop,"SpatialPolygonsDataFrame")
   square_pop@data$popdens <- abs(rnorm(nrow(square_pop@data)))
 
-  dat <- realTimeSurv::infecSim(region = square,
+  dat <- infecSim(region = square,
                   t.win = c(1,7),
                   covariates = square_pop,
                   mean.val= 10,
@@ -24,13 +24,13 @@ test_that("data sim works.",{
 
   expect_s3_class(dat,"data.frame")
 
-  mintest <- realTimeSurv::mincontrast_st(dat,
+  mintest <- mincontrast_st(dat,
                             square_pop,
                             square)
 
   expect_type(mintest,"double")
 
-  lg1 <- realTimeSurv::lgcp(data=dat,
+  lg1 <- lgcp(data=dat,
               pop.var = c("popdens"),
               boundary=square,
               covariates=square_pop,
@@ -38,8 +38,7 @@ test_that("data sim works.",{
               laglength = 7,
               mala.pars=c(200,100,1),
               nchains=2,
-              dirname="~/test",
-              lib = "C:/docs/R")
+              dirname="~/test")
 
   expect_s3_class(lg1,"lgcpReal")
 
@@ -53,7 +52,7 @@ test_that("data sim works.",{
   expect_s3_class(p1,"lgcpRealPlot")
   expect_s3_class(p1[[1]],"gg")
 
-  p2 <- realTimeSurv::plot_hotspot(lg1,
+  p2 <- plot_hotspot(lg1,
                      covariates = square_pop,
                      threshold.var = c("poppp+obs+latent",
                                        "poppp+obs+latent+lag(3)"),
