@@ -422,7 +422,7 @@ mincontrast_st <- function(data,
     requireNamespace("spatstat")
     popVal <- function(x,y){
       spp <- sp::SpatialPoints(data.frame(x=x,y=y))
-      crsN <- CRS("+init=epsg:4326")
+      crsN <- sp::CRS("+init=epsg:4326")
       sp::proj4string(spp) <- crsN
       sp::proj4string(covariates) <- crsN
       val <- sp::over(spp,covariates)
@@ -639,7 +639,7 @@ lgcp <- function(data,
     if(!is.null(pop.var)){
       popVal <- function(x,y){
         spp <- sp::SpatialPoints(data.frame(x=x,y=y))
-        crsN <- CRS("+init=epsg:4326")
+        crsN <- sp::CRS("+init=epsg:4326")
         sp::proj4string(spp) <- crsN
         sp::proj4string(covariates) <- crsN
         val <- sp::over(spp,covariates)
@@ -685,8 +685,10 @@ lgcp <- function(data,
     parallel::clusterExport(cl,c('lib'),envir = environment())
     parallel::clusterEvalQ(cl,.libPaths(lib))
   }
-  parallel::clusterEvalQ(cl,library(realTimeSurv))
+  #parallel::clusterEvalQ(cl,library(realTimeSurv))
   parallel::clusterEvalQ(cl,library(lgcp))
+  parallel::clusterCall(cl, assign, "lgcpST", lgcpST, envir = .GlobalEnv)
+
   parallel::clusterExport(cl,c('form','xyt','T','laglength','Zmat','priors','INITS',
                      'CF','cellwidth','dirname','mala.pars',"offsetList"),
                 envir = environment())
