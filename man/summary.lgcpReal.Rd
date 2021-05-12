@@ -18,7 +18,7 @@
 \item{...}{...}
 }
 \value{
-A table with posterior mean, SD, and quantiles of posterior and prior distributions.
+A table with posterior mean, SD, and quantiles of posterior and prior distributions
 }
 \description{
 Summarise output from a call to \code{lgcp}

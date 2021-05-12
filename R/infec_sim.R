@@ -20,6 +20,7 @@
 #' @param grid.size Size of the computational grid to simulate the infectious process
 #' @return A list: (1) simulated data for each computational grid cell, (2) simulated case locations and time, (3) plot
 #' of Poisson intensity, (4) plot of simulated case locations, (5) stpp object of case locations for use with stpp functions.
+#' @importFrom stats rpois runif
 #' @export
 infecSim <- function(region,
                      t.win,

@@ -37,6 +37,7 @@ Imports:
     spatstat,
     parallel,
     pbapply,
+    rlang,
     coda,
     bayesplot
 Depends: 
