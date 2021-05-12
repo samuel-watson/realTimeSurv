@@ -6,7 +6,7 @@ Authors@R:
            family = "Watson",
            role = c("aut", "cre"),
            email = "s.i.watson@bham.ac.uk",
-           comment = c(ORCID = "YOUR-ORCID-ID"))
+           comment = c(ORCID = "0000-0002-8972-769X "))
 Description: Convenient tools and data for the real-time surveillance of 
     infectious disease and various visualisation and reporting tools. 
     The package serves as a wrapper to a variety of geostatistical (lgcp, sp, rgeos, etc.) 
@@ -43,4 +43,5 @@ Depends:
     R (>= 2.10),
     lgcp (>= 1.7)
 Suggests: 
-    testthat
+    testthat,
+    ggmap

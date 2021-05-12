@@ -477,7 +477,8 @@ mincontrast_st <- function(data,
 #' @param laglength The number of time periods to include. The maximum value of \code{t} in \code{data}
 #' is used as the present period, and time periods are counted back from this value.
 #' @param dirname The directory root name to save model output. A directory is created for each
-#' MCMC chain as \code{dirname.1}, \code{dirname.2}, etc.
+#' MCMC chain as \code{dirname.1}, \code{dirname.2}, etc. If NULL then a temporary directory is used,
+#' this will result in the data being lost after the session in closed though.
 #' @param prevRun Used to set prior distributions. Either output from a previous call to \code{lgcp}
 #' to use posterior distributions from previous period, or a call to \code{lgcp::lgcpPrior}.
 #' @param mala.pars Parameters for the MCMC sampler. A vector of three numbers: the total number
@@ -495,7 +496,7 @@ lgcp <- function(data,
                  covariates=NULL,
                  cellwidth,
                  laglength,
-                 dirname,
+                 dirname=NULL,
                  prevRun=NULL,
                  mala.pars=c(26250,20000,50),
                  nchains=parallel::detectCores(),
@@ -504,7 +505,8 @@ lgcp <- function(data,
   if(!is(data,"data.frame")|any(!colnames(data)%in%c('x','y','t')))stop("Data needs to be a data frame with columns x,y, and t")
   if(!is(boundary,"SpatialPolygonsDataFrame"))stop("Boundary needs to be of class SpatialPolygonsDataFrame")
   if(!is.null(covariates)&!is(covariates,"SpatialPolygonsDataFrame"))stop("Covariates needs to be of class SpatialPolygonsDataFrame")
-  if(any(is.na(data$x)|is.na(data$y)))warning(paste0(sum(is.na(data$x)|is.na(data$y))," rows have NA values and will be removed."))
+  if(any(is.na(data$x)|is.na(data$y)))print(paste0(sum(is.na(data$x)|is.na(data$y))," rows have NA values and will be removed\n"))
+  if(is.null(dirname))print('Dirname is NULL so any model fits will be lost once the session is closed\n')
 
   data <- data[!is.na(data$x)&!is.na(data$y),]
   data <- data[,c('x','y','t')]
@@ -682,6 +684,14 @@ lgcp <- function(data,
 
   ## parellise
   cat("\nStarting sampling... This may take a long time.\n")
+
+  if(is.null(dirname)){
+    dir1 <- tempdir()
+    dir1 <- paste0(dir1,"\\",as.numeric(Sys.time()))
+  } else {
+    dir1 <- dirname
+  }
+
   cl <- parallel::makeCluster(nchains)
   if(!is.null(lib)){
     parallel::clusterExport(cl,c('lib'),envir = environment())
@@ -693,11 +703,11 @@ lgcp <- function(data,
   #parallel::clusterCall(cl, requireNamespace("lgcp"))
 
   parallel::clusterExport(cl,c('form','xyt','T','laglength','Zmat','priors','INITS',
-                     'CF','cellwidth','dirname','mala.pars',"offsetList"),
+                     'CF','cellwidth','dir1','mala.pars',"offsetList"),
                 envir = environment())
 
   pbapply::pboptions(type="none")
-  lg.out <- pbapply::pbsapply(1:8,function(i)lgcpST(formula = form,
+  lg.out <- pbapply::pbsapply(1:nchains,function(i)lgcpST(formula = form,
                                            xyt = xyt,
                                            T = T,
                                            laglength = laglength-1,
@@ -715,7 +725,7 @@ lgcp <- function(data,
                                                                                                   C = 1,
                                                                                                   targetacceptance = 0.574)),
                                            output.control = setoutput(gridfunction =
-                                                                        dump2dir(dirname = file.path(paste0(dirname,".",i)),
+                                                                        dump2dir(dirname = file.path(paste0(dir1,".",i)),
                                                                                  lastonly = F,
                                                                                  forceSave = TRUE)),
                                            ext = 2),
@@ -724,20 +734,20 @@ lgcp <- function(data,
   parallel::stopCluster(cl)
 
   if(is(lg.out,"matrix")){
-    eta <- do.call(rbind,lapply(1:8,function(i)return(lg.out[,i]$etarec)))
-    beta <- do.call(rbind,lapply(1:8,function(i)return(lg.out[,i]$betarec)))
-    timetaken <- do.call(rbind,lapply(1:8,function(i)return(lg.out[,i]$timetaken)))
-    lasth <- do.call(rbind,lapply(1:8,function(i)return(lg.out[,i]$lasth)))
+    eta <- do.call(rbind,lapply(1:nchains,function(i)return(lg.out[,i]$etarec)))
+    beta <- do.call(rbind,lapply(1:nchains,function(i)return(lg.out[,i]$betarec)))
+    timetaken <- do.call(rbind,lapply(1:nchains,function(i)return(lg.out[,i]$timetaken)))
+    lasth <- do.call(rbind,lapply(1:nchains,function(i)return(lg.out[,i]$lasth)))
   } else if(is(lg.out,"list")){
-    eta <- do.call(rbind,lapply(1:8,function(i)return(lg.out[[i]]$etarec)))
-    beta <- do.call(rbind,lapply(1:8,function(i)return(lg.out[[i]]$betarec)))
-    timetaken <- do.call(rbind,lapply(1:8,function(i)return(lg.out[[i]]$timetaken)))
-    lasth <- do.call(rbind,lapply(1:8,function(i)return(lg.out[[i]]$lasth)))
+    eta <- do.call(rbind,lapply(1:nchains,function(i)return(lg.out[[i]]$etarec)))
+    beta <- do.call(rbind,lapply(1:nchains,function(i)return(lg.out[[i]]$betarec)))
+    timetaken <- do.call(rbind,lapply(1:nchains,function(i)return(lg.out[[i]]$timetaken)))
+    lasth <- do.call(rbind,lapply(1:nchains,function(i)return(lg.out[[i]]$lasth)))
   } else {
     eta <- do.call(rbind,lapply(lg.out,function(i)return(i$etarec)))
     beta <- do.call(rbind,lapply(lg.out,function(i)return(i$betarec)))
-    timetaken <- do.call(rbind,lapply(1:8,function(i)return(i$timetaken)))
-    lasth <- do.call(rbind,lapply(1:8,function(i)return(i$lasth)))
+    timetaken <- do.call(rbind,lapply(1:nchains,function(i)return(i$timetaken)))
+    lasth <- do.call(rbind,lapply(1:nchains,function(i)return(i$lasth)))
   }
 
   environment(form.sp) <- NULL
@@ -768,7 +778,7 @@ lgcp <- function(data,
                     form=form,
                     form.pop=form.pop,
                     form.t=form.t),
-    dirname=dirname,
+    dirname=dir1,
     boundary = boundary,
     cellwidth=cellwidth,
     data=data,

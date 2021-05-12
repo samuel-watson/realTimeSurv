@@ -14,7 +14,7 @@ lgcp(
   covariates = NULL,
   cellwidth,
   laglength,
-  dirname,
+  dirname = NULL,
   prevRun = NULL,
   mala.pars = c(26250, 20000, 50),
   nchains = parallel::detectCores(),
@@ -48,7 +48,8 @@ the covariate and population density data.}
 is used as the present period, and time periods are counted back from this value.}
 
 \item{dirname}{The directory root name to save model output. A directory is created for each
-MCMC chain as \code{dirname.1}, \code{dirname.2}, etc.}
+MCMC chain as \code{dirname.1}, \code{dirname.2}, etc. If NULL then a temporary directory is used,
+this will result in the data being lost after the session in closed though.}
 
 \item{prevRun}{Used to set prior distributions. Either output from a previous call to \code{lgcp}
 to use posterior distributions from previous period, or a call to \code{lgcp::lgcpPrior}.}
