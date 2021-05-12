@@ -43,5 +43,9 @@ test_that("data sim works.",{
   expect_s3_class(p2,"lgcpRealPlot")
   expect_s3_class(p2[[1]],"gg")
 
+  unlink(paste0(lg1$dirname,".1"),recursive = TRUE)
+  unlink(paste0(lg1$dirname,".2"),recursive = TRUE)
+  file.remove(paste0(tempdir(),"\\outl.RDS"))
+
 })
 
