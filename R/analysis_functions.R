@@ -900,18 +900,32 @@ convergence <- function(lg,
 #' of samples. This object is large so remove if no further analysis required.
 #' @importFrom stats quantile var
 #' @export
-vpc <- function(lg,covariates,rr=FALSE){
+vpc <- function(lg,
+                covariates,
+                rr=FALSE){
   if(is.null(covariates))stop("Please specify covariates.")
   OW <- lgcp::selectObsWindow(lg$xyt, cellwidth = lg$cellwidth)
   grid.data <- expand.grid(x=OW$xvals,y=OW$yvals)
   idx.mapping <- matrix(1:nrow(grid.data),nrow=length(OW$yvals),ncol=length(OW$xvals))
   idx.mapping <- c(t(apply(idx.mapping,2,rev)))
 
-  if(!exists("outl") |(exists("outl")&&attr(outl, "dirname")!=lg$dirname)){
-    print("Extracting posterior samples...")
+  if(file.exists(paste0(tempdir(),"\\outl.RDS"))){
+    outl <- readRDS(paste0(tempdir(),"\\outl.RDS"))
+  } else {
     outl <- lgcpExtract(lg$dirname,nrow(lg$lgcpRunInfo$timetaken))
-    assign("outl",outl,.GlobalEnv)
+    saveRDS(outl,paste0(tempdir(),"\\outl.RDS"))
   }
+
+  if(attr(outl, "dirname")!=lg$dirname){
+    outl <- lgcpExtract(lg$dirname,nrow(lg$lgcpRunInfo$timetaken))
+    saveRDS(outl,paste0(tempdir(),"\\outl.RDS"))
+  }
+
+  # if(!exists("outl") |(exists("outl")&&attr(outl, "dirname")!=lg$dirname)){
+  #   print("Extracting posterior samples...")
+  #   outl <- lgcpExtract(lg$dirname,nrow(lg$lgcpRunInfo$timetaken))
+  #   assign("outl",outl,.GlobalEnv)
+  # }
 
   tmp <- suppressWarnings( plot_lgcp_dat(outl,
                                          grid.data,
