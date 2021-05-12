@@ -199,11 +199,23 @@ plot_data <- function(lg,
   idx.mapping <- matrix(1:nrow(grid.data),nrow=length(OW$yvals),ncol=length(OW$xvals))
   idx.mapping <- c(t(apply(idx.mapping,2,rev)))
 
-  if(!exists("outl") |(exists("outl")&&attr(outl, "dirname")!=lg$dirname)){
-    print("Extracting posterior samples...")
+  if(file.exists(paste0(tempdir(),"\\outl.RDS"))){
+    outl <- readRDS(paste0(tempdir(),"\\outl.RDS"))
+  } else {
     outl <- lgcpExtract(lg$dirname,nrow(lg$lgcpRunInfo$timetaken))
-    assign("outl",outl,.GlobalEnv)
+    saveRDS(outl,paste0(tempdir(),"\\outl.RDS"))
   }
+
+  if(attr(outl, "dirname")!=lg$dirname){
+    outl <- lgcpExtract(lg$dirname,nrow(lg$lgcpRunInfo$timetaken))
+    saveRDS(outl,paste0(tempdir(),"\\outl.RDS"))
+  }
+
+  # if(!exists("outl") |(exists("outl")&&attr(outl, "dirname")!=lg$dirname)){
+  #   print("Extracting posterior samples...")
+  #   outl <- lgcpExtract(lg$dirname,nrow(lg$lgcpRunInfo$timetaken))
+  #   assign("outl",outl,.GlobalEnv)
+  # }
 
   res1 <- suppressWarnings( plot_lgcp_dat(outl,
                                                           grid.data,
@@ -320,11 +332,23 @@ plot_hotspot_data <- function(lg,
   idx.mapping <- matrix(1:nrow(grid.data),nrow=length(OW$yvals),ncol=length(OW$xvals))
   idx.mapping <- c(t(apply(idx.mapping,2,rev)))
 
-  if(!exists("outl") |(exists("outl")&&attr(outl, "dirname")!=lg$dirname)){
-    print("Extracting posterior samples...")
+  if(file.exists(paste0(tempdir(),"\\outl.RDS"))){
+    outl <- readRDS(paste0(tempdir(),"\\outl.RDS"))
+  } else {
     outl <- lgcpExtract(lg$dirname,nrow(lg$lgcpRunInfo$timetaken))
-    assign("outl",outl,.GlobalEnv)
+    saveRDS(outl,paste0(tempdir(),"\\outl.RDS"))
   }
+
+  if(attr(outl, "dirname")!=lg$dirname){
+    outl <- lgcpExtract(lg$dirname,nrow(lg$lgcpRunInfo$timetaken))
+    saveRDS(outl,paste0(tempdir(),"\\outl.RDS"))
+  }
+
+  # if(!exists("outl") |(exists("outl")&&attr(outl, "dirname")!=lg$dirname)){
+  #   print("Extracting posterior samples...")
+  #   outl <- lgcpExtract(lg$dirname,nrow(lg$lgcpRunInfo$timetaken))
+  #   assign("outl",outl,.GlobalEnv)
+  # }
 
   str1 <- unlist(strsplit(threshold.var[1],"\\+"))
 
