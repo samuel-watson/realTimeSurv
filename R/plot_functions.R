@@ -12,6 +12,7 @@
 #'@param plotlag Laglength for the plot
 #'@param data.out Logical indicating whether to return data frame with only
 #'plotting data (FALSE) or a list containing each predicted model subcomponent (TRUE)
+#'@importFrom stats model.matrix model.frame sd
 #'@export
 plot_lgcp_dat <- function(samps,
                           grid.data,
@@ -60,7 +61,7 @@ plot_lgcp_dat <- function(samps,
 
   if(!is.null(lg$formulae$form.sp)){
     linpred <- model.matrix(lg$formulae$form.sp,
-                            model.frame(~ ., dat1, na.action=na.pass))
+                            model.frame(~ ., dat1, na.action="na.pass"))
   }
 
   if(!is.null(lg$formulae$form.sp)&&
@@ -115,6 +116,7 @@ plot_lgcp_dat <- function(samps,
 #' @param nchains Integer, number of chains from call to \code{lgcp}.
 #' @return An array of dimension number of gridcells x number of iterations x
 #' number of time periods.
+#' @importFrom utils flush.console
 #' @export
 lgcpExtract <- function(dirname, nchains){
   mcmc <- list()
@@ -170,6 +172,8 @@ lgcpExtract <- function(dirname, nchains){
 #' @seealso aggregator, plot_hotspot, generate_report
 #' @importFrom ggplot2 ggplot aes geom_raster theme theme_bw element_blank scale_fill_viridis_c scale_fill_viridis_d
 #' @importFrom ggplot2 scale_fill_gradientn ggtitle coord_equal element_rect geom_tile facet_wrap geom_point geom_path
+#' @importFrom methods is
+#' @importFrom rlang .data
 #' @export
 plot.lgcpReal <- function(x,
                           covariates,
@@ -261,7 +265,7 @@ plot.lgcpReal <- function(x,
 
   }
 
-  ppop <- ggplot(data=res1,aes(x=x,y=y,fill=poppred))+
+  ppop <- ggplot(data=res1,aes(x=.data$x,y=.data$y,fill=.data$poppred))+
     geom_raster()+
     scale_fill_viridis_c(name="")+
     theme_bw()+
@@ -270,7 +274,7 @@ plot.lgcpReal <- function(x,
     ggtitle("Expected")+
     coord_equal()
 
-  plin <- ggplot(data=res1,aes(x=x,y=y,fill=linpred))+
+  plin <- ggplot(data=res1,aes(x=.data$x,y=.data$y,fill=.data$linpred))+
     geom_raster()+
     scale_fill_gradientn(name=rr_title,colours = c("purple","blue","yellow","orange","red","brown"),
                          values = col_vals,limits=col_lim)+
@@ -280,7 +284,7 @@ plot.lgcpReal <- function(x,
     ggtitle("Observed")+
     coord_equal()
 
-  px <- ggplot(data=res1,aes(x=x,y=y,fill=xpred))+
+  px <- ggplot(data=res1,aes(x=.data$x,y=.data$y,fill=.data$xpred))+
     geom_raster()+
     scale_fill_gradientn(name=rr_title,colours = c("purple","blue","yellow","orange","red","brown"),
                          values = col_vals,limits=col_lim)+
@@ -290,7 +294,7 @@ plot.lgcpReal <- function(x,
     ggtitle("Latent")+
     coord_equal()
 
-  psd <- ggplot(data=res1,aes(x=x,y=y,fill=exp(sd)))+
+  psd <- ggplot(data=res1,aes(x=.data$x,y=.data$y,fill=exp(.data$sd)))+
     geom_raster()+
     scale_fill_viridis_c()+
     theme_bw()+
@@ -299,7 +303,7 @@ plot.lgcpReal <- function(x,
     ggtitle("Posterior SD")+
     coord_equal()
 
-  ppred <- ggplot(data=res1,aes(x=x,y=y,fill=value))+
+  ppred <- ggplot(data=res1,aes(x=.data$x,y=.data$y,fill=.data$value))+
     geom_raster()+
     theme_bw()+
     theme(panel.grid = element_blank(),
@@ -328,7 +332,7 @@ plot.lgcpReal <- function(x,
 
       ppred <- ggmap::ggmap(mad_map) +
         geom_tile(data=ppred$data[!is.na(ppred$data$value),],
-                  aes(x=x,y=y,fill=value),alpha=0.4)+
+                  aes(x=.data$x,y=.data$y,fill=.data$value),alpha=0.4)+
         theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
 
       if(!is.null(change.lag)){
@@ -421,6 +425,8 @@ plot.lgcpReal <- function(x,
 #' \code{outl} is exported to the global environment to reduce needing to reload sampling
 #' data on further calls to the same \code{lgcpReal} object. This can be removed if needed as
 #' it can be large.
+#' @importFrom methods as is
+#' @importFrom rlang .data
 #' @examples
 #' \dontrun{
 #' p1 <- plot_hotspot(lg,
@@ -652,7 +658,7 @@ plot_hotspot <- function(lg,
     res1$dat1$class <- factor(res1$dat1$class,levels=labels,ordered=TRUE,labels=labels)
 
 
-    pclass <- ggplot(data=res1$dat1[!is.na(res1$dat1$value),],aes(x=x,y=y,fill=class))+
+    pclass <- ggplot(data=res1$dat1[!is.na(res1$dat1$value),],aes(x=.data$x,y=.data$y,fill=.data$class))+
       geom_raster()+
       scale_fill_viridis_d(drop=FALSE)+
       theme_bw()+
@@ -662,7 +668,7 @@ plot_hotspot <- function(lg,
       coord_equal()
 
 
-    pclass_prop <- ggplot(data=resp,aes(x=x,y=y,fill=value))+
+    pclass_prop <- ggplot(data=resp,aes(x=.data$x,y=.data$y,fill=.data$value))+
       geom_raster()+
       scale_fill_gradientn(name="Prob",colours = c("purple","blue","green","yellow","red","brown"),
                            values = seq(0,1,length.out=6),limits=c(0,1))+
@@ -679,7 +685,7 @@ plot_hotspot <- function(lg,
     res1$dat1$class <- I(res1$dat1$class_prop > threshold.prob)*1
     res1$dat1$class <- factor(res1$dat1$class,levels=c(0,1),labels=labels)
 
-    pclass <- ggplot(data=res1$dat1[!is.na(res1$dat1$value),],aes(x=x,y=y,fill=class))+
+    pclass <- ggplot(data=res1$dat1[!is.na(res1$dat1$value),],aes(x=.data$x,y=.data$y,fill=.data$class))+
       geom_raster()+
       scale_fill_viridis_d(drop=FALSE)+
       theme_bw()+
@@ -688,7 +694,7 @@ plot_hotspot <- function(lg,
       ggtitle(paste0("Classification if Pr(",threshold.var[1],">",threshold.value[1],") > ",round(threshold.prob*100,0),"%"))+
       coord_equal()
 
-    pclass_prop <- ggplot(data=res1$dat1[!is.na(res1$dat1$value),],aes(x=x,y=y,fill=class_prop))+
+    pclass_prop <- ggplot(data=res1$dat1[!is.na(res1$dat1$value),],aes(x=.data$x,y=.data$y,fill=.data$class_prop))+
       geom_raster()+
       scale_fill_gradientn(name="Prob",colours = c("purple","blue","green","yellow","red","brown"),
                            values = seq(0,1,length.out=6),limits=c(0,1))+
@@ -710,7 +716,7 @@ plot_hotspot <- function(lg,
                           source="stamen",
                           maptype = "toner")
       pclass <- ggmap::ggmap(mad_map) +
-        geom_tile(data=res1$dat1[!is.na(res1$dat1$value),],aes(x=x,y=y,fill=class),alpha=0.4)+
+        geom_tile(data=res1$dat1[!is.na(res1$dat1$value),],aes(x=.data$x,y=.data$y,fill=.data$class),alpha=0.4)+
         scale_fill_viridis_d(name="",option="B")+
         theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
     } else {
@@ -742,7 +748,10 @@ plot_hotspot <- function(lg,
 #' @param plot A logical value indicating whether to produce plots of the prior and posterior distributions of model parameters
 #' @param verbose A logical value indicating whether to print running time and chains
 #' @param ... ...
-#' @return A table with posterior mean, SD, and quantiles of posterior and prior distributions.
+#' @return A table with posterior mean, SD, and quantiles of posterior and prior distributions
+#' @importFrom stats terms sd quantile qnorm rnorm
+#' @importFrom ggplot2 geom_density scale_linetype_discrete scale_color_discrete
+#' @importFrom rlang .data
 #' @export
 summary.lgcpReal <- function(object,
                              linear=TRUE,
@@ -860,9 +869,9 @@ summary.lgcpReal <- function(object,
       betadf$value <- exp(betadf$value)
     }
 
-    p.beta <- ggplot(data=betadf,aes(x=value,lty=post,color=post))+
+    p.beta <- ggplot(data=betadf,aes(x=.data$value,lty=.data$post,color=.data$post))+
       geom_density()+
-      facet_wrap(~varname,scale="free")+
+      facet_wrap(~varname,scales ="free")+
       theme_bw()+
       theme(panel.grid=element_blank())+
       scale_linetype_discrete(name="")+
@@ -882,9 +891,9 @@ summary.lgcpReal <- function(object,
       etadf$value <- exp(etadf$value)
     }
 
-    p.eta <- ggplot(data=etadf,aes(x=value,lty=post,color=post))+
+    p.eta <- ggplot(data=etadf,aes(x=.data$value,lty=.data$post,color=.data$post))+
       geom_density()+
-      facet_wrap(~varname,scale="free")+
+      facet_wrap(~varname,scales="free")+
       theme_bw()+
       theme(panel.grid=element_blank())+
       scale_linetype_discrete(name="")+
@@ -915,6 +924,9 @@ summary.lgcpReal <- function(object,
 #' @param aggpoly A \code{spatialPolygons} or \code{spatialPolygonsDataFrame} object specifying the geography to aggregate to.
 #' @param osm A logical value indicating whether to overlay the plot on an OpenStreetMap map
 #' @return An lgcpRealPlot object comprising a list of two ggplot objects.
+#' @importFrom methods as is
+#' @importFrom utils flush.console
+#' @importFrom rlang .data
 #' @export
 aggregator <- function(obj,
                        aggpoly,
@@ -998,13 +1010,13 @@ aggregator <- function(obj,
     col_vals <- c(0,1/(rr_max*2),seq(1/rr_max,1,length.out = 4))
 
     ppred <- ggplot()+
-      ggspatial::layer_spatial(data=res,aes(fill=value))+
+      ggspatial::layer_spatial(data=res,aes(fill=.data$value))+
       theme_bw()+
       theme(panel.grid = element_blank())+
       ggtitle(obj[[1]]$labels$title)
 
     px <- ggplot()+
-      ggspatial::layer_spatial(data=res,aes(fill=xpred))+
+      ggspatial::layer_spatial(data=res,aes(fill=.data$xpred))+
       scale_fill_gradientn(name="RR",colours = c("purple","blue","yellow","orange","red","brown"),
                            values = col_vals,limits=col_lim)+
       theme_bw()+
@@ -1012,7 +1024,7 @@ aggregator <- function(obj,
       ggtitle("Latent")
 
     plin <- ggplot()+
-      ggspatial::layer_spatial(data=res,aes(fill=linpred))+
+      ggspatial::layer_spatial(data=res,aes(fill=.data$linpred))+
       scale_fill_gradientn(name="RR",colours = c("purple","blue","yellow","orange","red","brown"),
                            values = col_vals,limits=col_lim)+
       theme_bw()+
@@ -1020,14 +1032,14 @@ aggregator <- function(obj,
       ggtitle("Observed")
 
     ppop <- ggplot()+
-      ggspatial::layer_spatial(data=res,aes(fill=poppred))+
+      ggspatial::layer_spatial(data=res,aes(fill=.data$poppred))+
       scale_fill_viridis_c()+
       theme_bw()+
       theme(panel.grid = element_blank())+
       ggtitle("Expected")
 
     psd <- ggplot()+
-      ggspatial::layer_spatial(data=res,aes(fill=xpred))+
+      ggspatial::layer_spatial(data=res,aes(fill=.data$xpred))+
       scale_fill_viridis_c()+
       theme_bw()+
       theme(panel.grid = element_blank())+
@@ -1042,7 +1054,7 @@ aggregator <- function(obj,
                             source="stamen",
                             maptype = "toner")
         ppred <- ggmap::ggmap(mad_map) +
-          ggspatial::layer_spatial(data=res,aes(fill=value),alpha=0.4)+
+          ggspatial::layer_spatial(data=res,aes(fill=.data$value),alpha=0.4)+
           theme_bw()+
           theme(panel.grid = element_blank())+
           ggtitle(obj[[1]]$labels$title)
@@ -1074,14 +1086,14 @@ aggregator <- function(obj,
       res@data$class <- factor(res@data$class,levels=attr(obj,"labs"),ordered = TRUE)
 
       pclass <- ggplot()+
-        ggspatial::layer_spatial(data=res,aes(fill=class))+
+        ggspatial::layer_spatial(data=res,aes(fill=.data$class))+
         scale_fill_viridis_d()+
         theme_bw()+
         theme(panel.grid = element_blank())+
         ggtitle(paste0("Classification if Pr(",attr(obj,"str"),">",attr(obj,"vals"),") > ",round(attr(obj,"threshold")*100,0),"%"))
 
       ppred <- ggplot()+
-        ggspatial::layer_spatial(data=res,aes(fill=class_prop))+
+        ggspatial::layer_spatial(data=res,aes(fill=.data$class_prop))+
         scale_fill_gradientn(name="Prob",colours = c("purple","blue","green","yellow","red","brown"),
                              values = seq(0,1,length.out=6),limits=c(0,1))+
         theme_bw()+
@@ -1097,7 +1109,7 @@ aggregator <- function(obj,
 
 
       pclass <- ggplot()+
-        ggspatial::layer_spatial(data=res,aes(fill=class))+
+        ggspatial::layer_spatial(data=res,aes(fill=.data$class))+
         scale_fill_viridis_d()+
         theme_bw()+
         theme(panel.grid = element_blank())+
@@ -1107,7 +1119,7 @@ aggregator <- function(obj,
       for(i in 1:nlabs){
         res@data$tmp <- res@data[,attr(obj,"labs")[i]]
         plist[[i]] <- ggplot()+
-          ggspatial::layer_spatial(data=res,aes(fill=tmp))+
+          ggspatial::layer_spatial(data=res,aes(fill=.data$tmp))+
           scale_fill_gradientn(name="Prob",colours = c("purple","blue","yellow","orange","red","brown"),
                                values = seq(0,1,length.out=6),limits=c(0,1))+
           theme_bw()+
@@ -1133,7 +1145,7 @@ aggregator <- function(obj,
                             source="stamen",
                             maptype = "toner")
         pclass <- ggmap::ggmap(mad_map) +
-          ggspatial::layer_spatial(data=res,aes(fill=class),alpha=0.4)+
+          ggspatial::layer_spatial(data=res,aes(fill=.data$class),alpha=0.4)+
           scale_fill_viridis_d()+
           theme_bw()+
           theme(panel.grid = element_blank())+

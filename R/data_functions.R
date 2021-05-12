@@ -10,6 +10,8 @@
 #' @param aggpoly A \code{spatialPolygons} or \code{spatialPolygonsDataFrame} describing the
 #' geography to aggregate to.
 #' @return A \code{spatialPolygonsDataFrame}
+#' @importFrom methods as is
+#' @importFrom utils flush.console
 #' @export
 aggregator_data <- function(obj,
                             aggpoly){
@@ -179,6 +181,7 @@ aggregator_data <- function(obj,
 #' @param rr_lim Integer, for plotting the relative risk, the maximum value of the colour scale. Useful
 #' when comparing multiple plots to put colour gradient on same scale.
 #' @return A code{spatialPolygonsDataFrame}
+#' @importFrom methods as is
 #' @seealso aggregator_data, plot_hotspot
 #' @export
 plot_data <- function(lg,
@@ -293,6 +296,7 @@ plot_data <- function(lg,
 #' @param per.days If one or both of the variables is incidence, the denominator number of person-days.
 #' @param msq The denominator for the population density in m^2. Default is hectares (per 10,000m^2)
 #' @return  A \code{spatialPixelsDataFrame}
+#' @importFrom methods as
 #' @export
 plot_hotspot_data <- function(lg,
                               covariates,

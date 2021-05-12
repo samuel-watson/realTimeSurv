@@ -15,6 +15,7 @@
 #'                   date = c("01/01/2020","02/01/2020","03/01/2020"))
 #' geocode_st(tmp, api_key = "ENTER_KEY")
 #' }
+#' @importFrom utils flush.console
 #' @export
 geocode_st <- function(df,api_key){
   if(!"address"%in%tolower(colnames(df)))stop("Column name for addresses should be 'Address' or 'address'")
@@ -106,7 +107,11 @@ get_day <- function(df){
 #' @param ext integer multiple by which grid should be extended, default is 2. Generally this will not need to be altered, but if the spatial correlation decays slowly, increasing 'ext' may be necessary.
 #' @param inclusion criterion for cells being included into observation window. Either 'touching' or 'centroid'. The former, the default, includes all cells that touch the observation window, the latter includes all cells whose centroids are inside the observation window.
 #' @importFrom lgcp selectObsWindow spatialAtRisk genFFTgrid fftinterpolate cov.interp.fft
-#' @importFrom lgcp mcmcLoop getCounts nullFunction MALAlgcpSpatioTemporal.PlusPars
+#' @importFrom lgcp mcmcLoop getCounts nullFunction MALAlgcpSpatioTemporal.PlusPars lgcpInits
+#' @importFrom lgcp setoutput mcmcProgressTextBar
+#' @importFrom spatstat.geom as.polygonal
+#' @importFrom utils object.size menu
+#' @importFrom stats runif
 #' @export
 lgcpST <- function (formula, xyt, T, laglength, ZmatList = NULL, model.priors,
                     model.inits = lgcpInits(), spatial.covmodel, cellwidth = NULL,
@@ -327,7 +332,7 @@ lgcpST <- function (formula, xyt, T, laglength, ZmatList = NULL, model.priors,
     }
   }
   mLoop = lgcp::mcmcLoop(N = mcmc.control$mala.length, burnin = mcmc.control$burnin,
-                   thin = mcmc.control$retain, progressor = mcmcProgressTextBar)
+                   thin = mcmc.control$retain, progressor = lgcp::mcmcProgressTextBar)
   nsamp <- floor((mLoop$N - mLoop$burnin)/mLoop$thin)
   if (!is.null(output.control$gridfunction) & class(output.control$gridfunction)[1] ==
       "dump2dir") {
@@ -409,6 +414,7 @@ lgcpST <- function (formula, xyt, T, laglength, ZmatList = NULL, model.priors,
 #' @return Returned values are the minimum contrast estimates of phi, sigma^2 and theta,
 #' as well as the overall squared discrepancy between the parametric and nonparametric forms
 #' of the spatial function used corresponding to these estimates.
+#' @importFrom methods is
 #' @export
 mincontrast_st <- function(data,
                            covariates,
@@ -486,6 +492,8 @@ mincontrast_st <- function(data,
 #' @param nchains The number of MCMC chains, default is \code{parallel::detectCores()}
 #' @param lib Library location if not the default, otherwise NULL
 #' @return An object of class lgcpReal
+#' @importFrom methods is
+#' @importFrom stats as.formula var
 #' @export
 lgcp <- function(data,
                  data.t=NULL,
@@ -724,8 +732,8 @@ lgcp <- function(data,
                                                                                                   alpha = 0.5,
                                                                                                   C = 1,
                                                                                                   targetacceptance = 0.574)),
-                                           output.control = setoutput(gridfunction =
-                                                                        dump2dir(dirname = file.path(paste0(dir1,".",i)),
+                                           output.control = lgcp::setoutput(gridfunction =
+                                                                        lgcp::dump2dir(dirname = file.path(paste0(dir1,".",i)),
                                                                                  lastonly = F,
                                                                                  forceSave = TRUE)),
                                            ext = 2),
@@ -803,6 +811,8 @@ lgcp <- function(data,
 #' @param plots Logical indicating whether to plot MCMC traceplots
 #' @return Traceplot of the MCMC chains of parameters from the linear predictor and
 #' covariance function is plotted, and R-hat and ESS statistics are printed.
+#' @importFrom methods is
+#' @importFrom stats terms
 #' @export
 convergence <- function(lg,
                         plots=TRUE){
@@ -888,6 +898,7 @@ convergence <- function(lg,
 #' @return Prints the quantiles of the VPC. An object called \code{outl} is exported to the
 #' global environment which contains the samples from the model. Used to reduce loading time
 #' of samples. This object is large so remove if no further analysis required.
+#' @importFrom stats quantile var
 #' @export
 vpc <- function(lg,covariates,rr=FALSE){
   if(is.null(covariates))stop("Please specify covariates.")
