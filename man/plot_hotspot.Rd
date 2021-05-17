@@ -98,20 +98,23 @@ d = Pr(variable 1 > threshold 1) > p1 & Pr(variable 2 > threshold 2) > p2
 The labels do not need to be unique.
 }
 \examples{
-\dontrun{
-p1 <- plot_hotspot(lg,
-                   covariates=lsoa,
-                   threshold.var=c('poppp+obs+latent'),
-                   threshold.value = c(1),
-                   labels = c('low','high'),
-                   osm = TRUE)
-
-p2 <- plot_hotspot(lg,
-                   covariates=lsoa,
-                   threshold.var=c('poppp+obs+latent','poppp+obs+latent+lag(7)'),
-                   threshold.value = c(1,1.5),
-                   labels = c('low','high','rising','both'),
-                   threshold.prob=0.5,
-                   osm = TRUE)
+\donttest{
+data(dat,square,square_pop)
+lg1 <- lgcp(data=dat,
+            pop.var = c("popdens"),
+            boundary=square,
+            covariates=square_pop,
+            cellwidth=0.1,
+            laglength = 7,
+            mala.pars=c(200,100,1),
+            nchains=2)
+plot_hotspot(lg1,
+             covariates = square_pop,
+             threshold.var = c("poppp+obs+latent",
+                               "poppp+obs+latent+lag(3)"),
+             threshold.value = c(0.1,1),
+             threshold.prob=0.8,
+             labels=c('low','high incidence',
+                      'rising incidence','both'))
 }
 }

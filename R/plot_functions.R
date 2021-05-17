@@ -455,7 +455,6 @@ plot.lgcpReal <- function(x,
 #' @importFrom methods as is
 #' @importFrom rlang .data
 #' @examples
-#' @examples
 #' \donttest{
 #' data(dat,square,square_pop)
 #' lg1 <- lgcp(data=dat,

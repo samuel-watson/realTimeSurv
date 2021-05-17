@@ -4,13 +4,15 @@
 \alias{aggregator_data}
 \title{Create spatial polygons data frame}
 \usage{
-aggregator_data(obj, aggpoly)
+aggregator_data(obj, aggpoly, verbose = TRUE)
 }
 \arguments{
 \item{obj}{A lgcpReal object from the lgcp function}
 
 \item{aggpoly}{A \code{spatialPolygons} or \code{spatialPolygonsDataFrame} describing the
 geography to aggregate to.}
+
+\item{verbose}{Logical value indicating whether to show progress bar}
 }
 \value{
 A \code{spatialPolygonsDataFrame}
@@ -22,4 +24,20 @@ Aggregate to larger geography and output data
 This function aggregates the output of plot or plot_hotspot to a
 larger geography and outputs a spatial polygons data frame that
 can be used to create other plots.
+}
+\examples{
+\donttest{
+data(dat,square,square_pop)
+lg1 <- lgcp(data=dat,
+            pop.var = c("popdens"),
+            boundary=square,
+            covariates=square_pop,
+            cellwidth=0.1,
+            laglength = 7,
+            mala.pars=c(200,100,1),
+            nchains=2)
+p1 <- plot(lg1,square_pop)
+aggregator_data(p1,
+                aggpoly=square_pop)
+}
 }

@@ -53,6 +53,20 @@ it can be large.
 \description{
 Plot incidence, model components, and their changes over time.
 }
+\examples{
+\donttest{
+data(dat,square,square_pop)
+lg1 <- lgcp(data=dat,
+            pop.var = c("popdens"),
+            boundary=square,
+            covariates=square_pop,
+            cellwidth=0.1,
+            laglength = 7,
+            mala.pars=c(200,100,1),
+            nchains=2)
+plot(lg1,square_pop)
+}
+}
 \seealso{
 aggregator, plot_hotspot, generate_report
 }

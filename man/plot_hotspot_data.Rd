@@ -46,3 +46,24 @@ A \code{spatialPixelsDataFrame}
 \description{
 Generate a spatial pixels data frame classifying hotspots and probabilities
 }
+\examples{
+\donttest{
+data(dat,square,square_pop)
+lg1 <- lgcp(data=dat,
+            pop.var = c("popdens"),
+            boundary=square,
+            covariates=square_pop,
+            cellwidth=0.1,
+            laglength = 7,
+            mala.pars=c(200,100,1),
+            nchains=2)
+plot_hotspot_data(lg1,
+             covariates = square_pop,
+             threshold.var = c("poppp+obs+latent",
+                               "poppp+obs+latent+lag(3)"),
+             threshold.value = c(0.1,1),
+             threshold.prob=0.8,
+             labels=c('low','high incidence',
+                      'rising incidence','both'))
+}
+}

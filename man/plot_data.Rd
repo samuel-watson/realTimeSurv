@@ -45,6 +45,20 @@ Output spatial pixels data frame of lgcp predictions
 This function generates a spatial pixels data frame with the output
 from lgcp.
 }
+\examples{
+\donttest{
+data(dat,square,square_pop)
+lg1 <- lgcp(data=dat,
+            pop.var = c("popdens"),
+            boundary=square,
+            covariates=square_pop,
+            cellwidth=0.1,
+            laglength = 7,
+            mala.pars=c(200,100,1),
+            nchains=2)
+plot_data(lg1,square_pop,change.lag=7)
+}
+}
 \seealso{
 aggregator_data, plot_hotspot
 }

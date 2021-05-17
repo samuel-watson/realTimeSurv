@@ -56,3 +56,16 @@ Simulate data from an infectious disease process modelled as a Poisson process
 intensity to lambda x (pop density) x (1+rho) in a disc of  radius delta for the next k time-periods.
 }
 }
+\examples{
+data(square,square_pop)
+infecSim(region = square,
+         t.win = c(1,10),
+         covariates = square_pop,
+         mean.val= 100,
+         p =1/100,
+         delta = c(0.01,4),
+         rho=3,
+         t.off = 4,
+         cov.pars = c(0.9,0.03,0.1),
+         grid.size = 64^2)
+}

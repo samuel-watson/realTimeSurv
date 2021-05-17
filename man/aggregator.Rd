@@ -4,7 +4,7 @@
 \alias{aggregator}
 \title{Aggregate lgcp output to larger geography}
 \usage{
-aggregator(obj, aggpoly, osm = FALSE)
+aggregator(obj, aggpoly, osm = FALSE, verbose = TRUE)
 }
 \arguments{
 \item{obj}{An lgcpRealPlot produced by \code{plot} or \code{plot_hotspot}. NOTE: the call \code{plot} or \code{plot_hotspot} must have
@@ -13,6 +13,8 @@ had \code{osm=FALSE} set to work with this function.}
 \item{aggpoly}{A \code{spatialPolygons} or \code{spatialPolygonsDataFrame} object specifying the geography to aggregate to.}
 
 \item{osm}{A logical value indicating whether to overlay the plot on an OpenStreetMap map}
+
+\item{verbose}{Logical value indicating whether to show progress bar}
 }
 \value{
 An lgcpRealPlot object comprising a list of two ggplot objects.
@@ -24,4 +26,20 @@ Take a lgcpRealPlot object and aggregates the output to a larger geography speci
 This function provides a way of producing aggregated model output for larger geographies. The model fitting takes place on
 a fine regular lattice, this function provides a way to aggregate this to non-regular polygons such as administrative or
 political boundaries.
+}
+\examples{
+\donttest{
+data(dat,square,square_pop)
+lg1 <- lgcp(data=dat,
+            pop.var = c("popdens"),
+            boundary=square,
+            covariates=square_pop,
+            cellwidth=0.1,
+            laglength = 7,
+            mala.pars=c(200,100,1),
+            nchains=2)
+p1 <- plot(lg1,square_pop)
+aggregator(p1,
+           aggpoly=square_pop)
+}
 }

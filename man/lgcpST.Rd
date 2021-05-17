@@ -53,6 +53,9 @@ lgcpST(
 
 \item{inclusion}{criterion for cells being included into observation window. Either 'touching' or 'centroid'. The former, the default, includes all cells that touch the observation window, the latter includes all cells whose centroids are inside the observation window.}
 }
+\value{
+an object of class lgcpPredictSpatioTemporalPlusParameters
+}
 \description{
 Internal function and alternative to \code{lgcp::lgcpPredictSpatioTemporalPlusPars}.
 }
