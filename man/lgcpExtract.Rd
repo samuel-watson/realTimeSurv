@@ -4,12 +4,14 @@
 \alias{lgcpExtract}
 \title{Extract samples from \code{lgcp} model}
 \usage{
-lgcpExtract(dirname, nchains)
+lgcpExtract(dirname, nchains, verbose = TRUE)
 }
 \arguments{
 \item{dirname}{Rootname of the directory in call to \code{lgcp}.}
 
 \item{nchains}{Integer, number of chains from call to \code{lgcp}.}
+
+\item{verbose}{Logical indicating whether to display progress bar}
 }
 \value{
 An array of dimension number of gridcells x number of iterations x

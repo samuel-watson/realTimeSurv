@@ -25,6 +25,7 @@ to integer values with t=1 being the earliest date provided.
 }
 \examples{
 \dontrun{
+#requires working API to run
 tmp <- data.frame(address=c("Buckingham palace","Big ben, Westminster","Marble arch, London"),
                   date = c("01/01/2020","02/01/2020","03/01/2020"))
 geocode_st(tmp, api_key = "ENTER_KEY")

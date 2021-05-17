@@ -13,6 +13,8 @@
 #'@param data.out Logical indicating whether to return data frame with only
 #'plotting data (FALSE) or a list containing each predicted model subcomponent (TRUE)
 #'@importFrom stats model.matrix model.frame sd
+#'@return A data.frame with model predictions across the computation grid used in the plotting
+#'functions in this package.
 #'@export
 plot_lgcp_dat <- function(samps,
                           grid.data,
@@ -47,7 +49,7 @@ plot_lgcp_dat <- function(samps,
   if(!is.null(lg$formulae$form.pop)){
     pop_cols <- which(grepl("pop",colnames(dat1)))
     for(i in pop_cols){
-      dat1[is.na(dat1[,i])|dat1[,i]==0,i] <- min(dat1[dat1[,i]>0&!is.na(dat1[,i]),i],na.rm=T)
+      dat1[is.na(dat1[,i])|dat1[,i]==0,i] <- min(dat1[dat1[,i]>0&!is.na(dat1[,i]),i],na.rm=TRUE)
     }
   }
 
@@ -114,11 +116,12 @@ plot_lgcp_dat <- function(samps,
 #'
 #' @param dirname Rootname of the directory in call to \code{lgcp}.
 #' @param nchains Integer, number of chains from call to \code{lgcp}.
+#' @param verbose Logical indicating whether to display progress bar
 #' @return An array of dimension number of gridcells x number of iterations x
 #' number of time periods.
 #' @importFrom utils flush.console
 #' @export
-lgcpExtract <- function(dirname, nchains){
+lgcpExtract <- function(dirname, nchains, verbose=TRUE){
   mcmc <- list()
   c1 <- list()
   for(i in 1:nchains){
@@ -134,7 +137,7 @@ lgcpExtract <- function(dirname, nchains){
         out[,j+(i-1)*d1[4],t] <- c(c1[[i]][,,t,j])
       }
     }
-    cat("\r|",rep("=",floor((t/d1[3])/0.05)),rep(" ",ceiling(((d1[3]-t)/d1[3])/0.05)),"| ",
+    if(verbose)cat("\r|",rep("=",floor((t/d1[3])/0.05)),rep(" ",ceiling(((d1[3]-t)/d1[3])/0.05)),"| ",
         floor((t/d1[3])/0.05)*5,"%",sep="");flush.console()
   }
 
@@ -174,6 +177,19 @@ lgcpExtract <- function(dirname, nchains){
 #' @importFrom ggplot2 scale_fill_gradientn ggtitle coord_equal element_rect geom_tile facet_wrap geom_point geom_path
 #' @importFrom methods is
 #' @importFrom rlang .data
+#' @examples
+#' \donttest{
+#' data(dat,square,square_pop)
+#' lg1 <- lgcp(data=dat,
+#'             pop.var = c("popdens"),
+#'             boundary=square,
+#'             covariates=square_pop,
+#'             cellwidth=0.1,
+#'             laglength = 7,
+#'             mala.pars=c(200,100,1),
+#'             nchains=2)
+#' plot(lg1,square_pop)
+#' }
 #' @export
 plot.lgcpReal <- function(x,
                           covariates,
@@ -219,7 +235,7 @@ plot.lgcpReal <- function(x,
                                           cellwidth = x$cellwidth))
 
   if(is.null(rr_lim)){
-    rr_lim1 <- ceiling(max(c(res1$linpred,res1$xpred),na.rm=T))
+    rr_lim1 <- ceiling(max(c(res1$linpred,res1$xpred),na.rm=TRUE))
     rr_lim2 <- NULL
   } else {
     rr_lim1 <- rr_lim
@@ -249,7 +265,7 @@ plot.lgcpReal <- function(x,
       if(!is.null(rr_lim)){
         rr_lim2 <- rr_lim
       } else {
-        rr_lim2 <- ceiling(max(c(res1$value),na.rm=T))
+        rr_lim2 <- ceiling(max(c(res1$value),na.rm=TRUE))
       }
 
       col_lim2 <- c(0.01,rr_lim2)
@@ -440,21 +456,24 @@ plot.lgcpReal <- function(x,
 #' @importFrom methods as is
 #' @importFrom rlang .data
 #' @examples
-#' \dontrun{
-#' p1 <- plot_hotspot(lg,
-#'                    covariates=lsoa,
-#'                    threshold.var=c('poppp+obs+latent'),
-#'                    threshold.value = c(1),
-#'                    labels = c('low','high'),
-#'                    osm = TRUE)
-#'
-#' p2 <- plot_hotspot(lg,
-#'                    covariates=lsoa,
-#'                    threshold.var=c('poppp+obs+latent','poppp+obs+latent+lag(7)'),
-#'                    threshold.value = c(1,1.5),
-#'                    labels = c('low','high','rising','both'),
-#'                    threshold.prob=0.5,
-#'                    osm = TRUE)
+#' \donttest{
+#' data(dat,square,square_pop)
+#' lg1 <- lgcp(data=dat,
+#'             pop.var = c("popdens"),
+#'             boundary=square,
+#'             covariates=square_pop,
+#'             cellwidth=0.1,
+#'             laglength = 7,
+#'             mala.pars=c(200,100,1),
+#'             nchains=2)
+#' plot_hotspot(lg1,
+#'              covariates = square_pop,
+#'              threshold.var = c("poppp+obs+latent",
+#'                                "poppp+obs+latent+lag(3)"),
+#'              threshold.value = c(0.1,1),
+#'              threshold.prob=0.8,
+#'              labels=c('low','high incidence',
+#'                       'rising incidence','both'))
 #' }
 #' @export
 plot_hotspot <- function(lg,
@@ -776,6 +795,19 @@ plot_hotspot <- function(lg,
 #' @importFrom stats terms sd quantile qnorm rnorm
 #' @importFrom ggplot2 geom_density scale_linetype_discrete scale_color_discrete
 #' @importFrom rlang .data
+#' @examples
+#' \donttest{
+#' data(dat,square,square_pop)
+#' lg1 <- lgcp(data=dat,
+#'             pop.var = c("popdens"),
+#'             boundary=square,
+#'             covariates=square_pop,
+#'             cellwidth=0.1,
+#'             laglength = 7,
+#'             mala.pars=c(200,100,1),
+#'             nchains=2)
+#' summary(lg1,plot=FALSE)
+#' }
 #' @export
 summary.lgcpReal <- function(object,
                              linear=TRUE,
@@ -947,14 +979,31 @@ summary.lgcpReal <- function(object,
 #' had \code{osm=FALSE} set to work with this function.
 #' @param aggpoly A \code{spatialPolygons} or \code{spatialPolygonsDataFrame} object specifying the geography to aggregate to.
 #' @param osm A logical value indicating whether to overlay the plot on an OpenStreetMap map
+#' @param verbose Logical value indicating whether to show progress bar
 #' @return An lgcpRealPlot object comprising a list of two ggplot objects.
 #' @importFrom methods as is
 #' @importFrom utils flush.console
 #' @importFrom rlang .data
+#' @examples
+#' \donttest{
+#' data(dat,square,square_pop)
+#' lg1 <- lgcp(data=dat,
+#'             pop.var = c("popdens"),
+#'             boundary=square,
+#'             covariates=square_pop,
+#'             cellwidth=0.1,
+#'             laglength = 7,
+#'             mala.pars=c(200,100,1),
+#'             nchains=2)
+#' p1 <- plot(lg1,square_pop)
+#' aggregator(p1,
+#'            aggpoly=square_pop)
+#' }
 #' @export
 aggregator <- function(obj,
                        aggpoly,
-                       osm=FALSE){
+                       osm=FALSE,
+                       verbose=TRUE){
 
   if(!is(obj,"lgcpRealPlot"))stop("obj should be an lgcpRealPlot")
   if((!is(aggpoly,"SpatialPolygons")|!is(aggpoly,"SpatialPolygonsDataFrame")))
@@ -993,7 +1042,7 @@ aggregator <- function(obj,
     }
   }
 
-  cat("\nAggregating results:\n")
+  if(verbose)cat("\nAggregating results:\n")
   for(i in 1:nrow(dataagg)){
     map_int <- rgeos::gIntersection(dat2,map[i],byid = TRUE, drop_not_poly = TRUE)
     if(!is.null(map_int)&length(map_int)>0){
@@ -1021,7 +1070,7 @@ aggregator <- function(obj,
       }
     }
 
-    cat("\r|",rep("=",floor((i/nrow(dataagg))/0.05)),
+    if(verbose)cat("\r|",rep("=",floor((i/nrow(dataagg))/0.05)),
         rep(" ",ceiling(((nrow(dataagg)-i)/nrow(dataagg))/0.05)),"| ",
         floor((i/nrow(dataagg))/0.05)*5,"%",sep="");flush.console()
   }

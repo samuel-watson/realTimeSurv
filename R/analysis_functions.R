@@ -11,6 +11,7 @@
 #' @return A data frame with the columns for longitude, latitude, and time.
 #' @examples
 #' \dontrun{
+#' #requires working API to run
 #' tmp <- data.frame(address=c("Buckingham palace","Big ben, Westminster","Marble arch, London"),
 #'                   date = c("01/01/2020","02/01/2020","03/01/2020"))
 #' geocode_st(tmp, api_key = "ENTER_KEY")
@@ -32,7 +33,7 @@ geocode_st <- function(df,api_key){
                      long=rep(NA,nrow(df)),
                      t=dts)
 
-  cat("\nProcessing addresses...\n")
+  message("\nProcessing addresses...\n")
   nmat <- 0
   nnomat <- 0
   for(i in 1:length(addrs)){
@@ -48,7 +49,7 @@ geocode_st <- function(df,api_key){
         nnomat <- nnomat + 1
       }
     }
-    cat("\rAddresses: ",nmat," matched; ",nnomat," unable to match, of ",length(addrs)," total.");flush.console()
+    message("\rAddresses: ",nmat," matched; ",nnomat," unable to match, of ",length(addrs)," total.");flush.console()
   }
 
   return(data)
@@ -61,11 +62,9 @@ geocode_st <- function(df,api_key){
 #' of the cases. Typically the same data frame used in a call to \code{geocode_st}
 #' @return A data frame with value for time period and day of the week.
 #' @examples
-#' \dontrun{
 #' tmp <- data.frame(address=c("Buckingham palace","Big ben, Westminster","Marble arch, London"),
 #'                   date = c("01/01/2020","02/01/2020","03/01/2020"))
 #' get_day(tmp)
-#' }
 #' @export
 get_day <- function(df){
   if(!"date"%in%tolower(colnames(df)))stop("Column name for dates should be 'Date' or 'date'")
@@ -112,6 +111,7 @@ get_day <- function(df){
 #' @importFrom spatstat.geom as.polygonal
 #' @importFrom utils object.size menu
 #' @importFrom stats runif
+#' @return an object of class lgcpPredictSpatioTemporalPlusParameters
 #' @export
 lgcpST <- function (formula, xyt, T, laglength, ZmatList = NULL, model.priors,
                     model.inits = lgcpInits(), spatial.covmodel, cellwidth = NULL,
@@ -494,6 +494,18 @@ mincontrast_st <- function(data,
 #' @return An object of class lgcpReal
 #' @importFrom methods is
 #' @importFrom stats as.formula var
+#' @examples
+#' \donttest{
+#' data(dat,square,square_pop)
+#' lg1 <- lgcp(data=dat,
+#'             pop.var = c("popdens"),
+#'             boundary=square,
+#'             covariates=square_pop,
+#'             cellwidth=0.1,
+#'             laglength = 7,
+#'             mala.pars=c(200,100,1),
+#'             nchains=2)
+#' }
 #' @export
 lgcp <- function(data,
                  data.t=NULL,
@@ -513,8 +525,8 @@ lgcp <- function(data,
   if(!is(data,"data.frame")|any(!colnames(data)%in%c('x','y','t')))stop("Data needs to be a data frame with columns x,y, and t")
   if(!is(boundary,"SpatialPolygonsDataFrame"))stop("Boundary needs to be of class SpatialPolygonsDataFrame")
   if(!is.null(covariates)&!is(covariates,"SpatialPolygonsDataFrame"))stop("Covariates needs to be of class SpatialPolygonsDataFrame")
-  if(any(is.na(data$x)|is.na(data$y)))print(paste0(sum(is.na(data$x)|is.na(data$y))," rows have NA values and will be removed\n"))
-  if(is.null(dirname))print('Dirname is NULL so any model fits will be lost once the session is closed\n')
+  if(any(is.na(data$x)|is.na(data$y)))warning(paste0(sum(is.na(data$x)|is.na(data$y))," rows have NA values and will be removed\n"))
+  if(is.null(dirname))warning('Dirname is NULL so any model fits will be lost once the session is closed\n')
 
   data <- data[!is.na(data$x)&!is.na(data$y),]
   data <- data[,c('x','y','t')]
@@ -629,7 +641,7 @@ lgcp <- function(data,
 
 
 
-  cat("\nAdding temporal covariates\n")
+  message("\nAdding temporal covariates\n")
   if(!is.null(t.covs)){
     Zmat <- lgcp::addTemporalCovariates(temporal.formula = form.t,
                                   T = T,
@@ -691,7 +703,7 @@ lgcp <- function(data,
   CF <- lgcp::CovFunction(lgcp::exponentialCovFct)
 
   ## parellise
-  cat("\nStarting sampling... This may take a long time.\n")
+  message("\nStarting sampling... This may take a long time.\n")
 
   if(is.null(dirname)){
     dir1 <- tempdir()
@@ -738,7 +750,7 @@ lgcp <- function(data,
                                                                                  forceSave = TRUE)),
                                            ext = 2),
                      cl = cl)
-  cat("\nSampling complete at: ",Sys.time())
+  message("\nSampling complete at: ",Sys.time())
   parallel::stopCluster(cl)
 
   if(is(lg.out,"matrix")){
@@ -854,14 +866,6 @@ convergence <- function(lg,
   }
 
 
-
-
-  #p3 <- bayesplot::mcmc_acf(betalist)
-  #p4 <- bayesplot::mcmc_acf(etalist)
-
-  # print(p3)
-  # print(p4)
-
   beta_r <- coda::gelman.diag(betalist_mcmc)
   beta_ess <- coda::effectiveSize(betalist_mcmc)
   eta_r <- coda::gelman.diag(etalist_mcmc)
@@ -871,10 +875,6 @@ convergence <- function(lg,
   colnames(res) <- c("R-hat","ESS")
   colnames(res_e) <- c("R-hat","ESS")
 
-
-  # print(knitr::kable(rbind(res,res_e),"simple",digits=3,options=list(knitr.kable.NA="")))
-  # return(invisible(list(knitr::kable(rbind(res,res_e),"simple",digits=3,options=list(knitr.kable.NA="")),
-  #                       ggpubr::ggarrange(p1,p2,ncol=1,heights = c(2,1)))))
   return(rbind(res,res_e))
 }
 
@@ -939,20 +939,20 @@ vpc <- function(lg,
   for(i in 1:nrow(tmp$xpred)){
     re_samp <- sample(tmp$xpred,ncol(tmp$xpred))
     if(!rr){
-      tmp$dat1$vpc[i] <- var(tmp$pop[i,]*tmp$linpred[i,]*re_samp,na.rm=T)/(
-        var(tmp$pop[i,]*tmp$linpred[i,]*re_samp,na.rm=T)+
-          mean(tmp$pop[i,]*tmp$linpred[i,]*re_samp,na.rm=T))
+      tmp$dat1$vpc[i] <- var(tmp$pop[i,]*tmp$linpred[i,]*re_samp,na.rm=TRUE)/(
+        var(tmp$pop[i,]*tmp$linpred[i,]*re_samp,na.rm=TRUE)+
+          mean(tmp$pop[i,]*tmp$linpred[i,]*re_samp,na.rm=TRUE))
     } else {
       tmp$dat1$vpc[i] <- var(log(tmp$linpred[i,]))/(var(log(tmp$linpred[i,]))+var(log(re_samp)))
     }
   }
 
-  res <- t(as.data.frame(quantile(tmp$dat1$vpc,c(0.025,0.25,0.5,0.75,0.975),na.rm=T)))
+  res <- t(as.data.frame(quantile(tmp$dat1$vpc,c(0.025,0.25,0.5,0.75,0.975),na.rm=TRUE)))
   vals <- res[,1:ncol(res)]
   res[,1:ncol(res)] <- paste0(round(res[,1:ncol(res)]*100,0),"%")
   rownames(res) <- "VPC"
 
-  print(knitr::kable(res,"simple",digits=3,options=list(knitr.kable.NA="")))
   res[,1:ncol(res)] <- round(as.numeric(vals),3)
+  print(res)
   return(invisible(res))
 }

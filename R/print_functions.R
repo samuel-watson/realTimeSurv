@@ -23,6 +23,7 @@ print.lgcpRealSumm <- function(x, ...,digits=3){
 #'
 #' @param x An lgcpRealPlot object
 #' @param ... ...
+#' @return A string summarising the model
 #' @export
 print.lgcpReal <- function(x, ...){
   print(paste0("An lgcpReal model fit with ",nrow(x$lgcpRunInfo$timetaken)," chains."))

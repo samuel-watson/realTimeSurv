@@ -23,3 +23,17 @@ A table with posterior mean, SD, and quantiles of posterior and prior distributi
 \description{
 Summarise output from a call to \code{lgcp}
 }
+\examples{
+\donttest{
+data(dat,square,square_pop)
+lg1 <- lgcp(data=dat,
+            pop.var = c("popdens"),
+            boundary=square,
+            covariates=square_pop,
+            cellwidth=0.1,
+            laglength = 7,
+            mala.pars=c(200,100,1),
+            nchains=2)
+summary(lg1,plot=FALSE)
+}
+}

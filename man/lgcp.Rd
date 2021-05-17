@@ -77,3 +77,16 @@ temporally varying covariates but not spatio-temporally varying covariates, as i
 relevant to real-time surveillance applications these are not generally available. For users
 requiring additional functionality, please refer to the \code{lgcp} package documentation.
 }
+\examples{
+\donttest{
+data(dat,square,square_pop)
+lg1 <- lgcp(data=dat,
+            pop.var = c("popdens"),
+            boundary=square,
+            covariates=square_pop,
+            cellwidth=0.1,
+            laglength = 7,
+            mala.pars=c(200,100,1),
+            nchains=2)
+}
+}

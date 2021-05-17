@@ -9,12 +9,29 @@
 #' @param obj A lgcpReal object from the lgcp function
 #' @param aggpoly A \code{spatialPolygons} or \code{spatialPolygonsDataFrame} describing the
 #' geography to aggregate to.
+#' @param verbose Logical value indicating whether to show progress bar
 #' @return A \code{spatialPolygonsDataFrame}
 #' @importFrom methods as is
 #' @importFrom utils flush.console
+#' @examples
+#' \donttest{
+#' data(dat,square,square_pop)
+#' lg1 <- lgcp(data=dat,
+#'             pop.var = c("popdens"),
+#'             boundary=square,
+#'             covariates=square_pop,
+#'             cellwidth=0.1,
+#'             laglength = 7,
+#'             mala.pars=c(200,100,1),
+#'             nchains=2)
+#' p1 <- plot(lg1,square_pop)
+#' aggregator_data(p1,
+#'                 aggpoly=square_pop)
+#' }
 #' @export
 aggregator_data <- function(obj,
-                            aggpoly){
+                            aggpoly,
+                            verbose=TRUE){
   if(!is(obj,"lgcpRealPlot"))stop("obj must be an lgcpRealPlot from either plot or plot_hospot functions.")
   if((!is(aggpoly,"SpatialPolygons")|!is(aggpoly,"SpatialPolygonsDataFrame")))
     stop("aggpoly must be of class ''SpatialPolygons or SpatialPolygonsDataFrame")
@@ -52,7 +69,7 @@ aggregator_data <- function(obj,
     }
   }
 
-  cat("\nAggregating results:\n")
+  if(verbose)cat("\nAggregating results:\n")
   for(i in 1:nrow(dataagg)){
     map_int <- rgeos::gIntersection(dat2,map[i],byid = TRUE, drop_not_poly = TRUE)
     if(!is.null(map_int)&length(map_int)>0){
@@ -80,7 +97,7 @@ aggregator_data <- function(obj,
       }
     }
 
-    cat("\r|",rep("=",floor((i/nrow(dataagg))/0.05)),
+    if(verbose)cat("\r|",rep("=",floor((i/nrow(dataagg))/0.05)),
         rep(" ",ceiling(((nrow(dataagg)-i)/nrow(dataagg))/0.05)),"| ",
         floor((i/nrow(dataagg))/0.05)*5,"%",sep="");flush.console()
   }
@@ -183,6 +200,19 @@ aggregator_data <- function(obj,
 #' @return A code{spatialPolygonsDataFrame}
 #' @importFrom methods as is
 #' @seealso aggregator_data, plot_hotspot
+#' @examples
+#' \donttest{
+#' data(dat,square,square_pop)
+#' lg1 <- lgcp(data=dat,
+#'             pop.var = c("popdens"),
+#'             boundary=square,
+#'             covariates=square_pop,
+#'             cellwidth=0.1,
+#'             laglength = 7,
+#'             mala.pars=c(200,100,1),
+#'             nchains=2)
+#' plot_data(lg1,square_pop)
+#' }
 #' @export
 plot_data <- function(lg,
                       covariates,
@@ -226,7 +256,7 @@ plot_data <- function(lg,
                                                           cellwidth = lg$cellwidth))
 
   if(is.null(rr_lim)){
-    rr_lim1 <- ceiling(max(c(res1$linpred,res1$xpred),na.rm=T))
+    rr_lim1 <- ceiling(max(c(res1$linpred,res1$xpred),na.rm=TRUE))
     rr_lim2 <- NULL
   } else {
     rr_lim1 <- rr_lim
@@ -252,7 +282,7 @@ plot_data <- function(lg,
       if(!is.null(rr_lim)){
         rr_lim2 <- rr_lim
       } else {
-        rr_lim2 <- ceiling(max(c(res1$value),na.rm=T))
+        rr_lim2 <- ceiling(max(c(res1$value),na.rm=TRUE))
       }
 
       col_lim2 <- c(0.01,rr_lim2)
@@ -309,6 +339,24 @@ plot_data <- function(lg,
 #' @param msq The denominator for the population density in m^2. Default is hectares (per 10,000m^2)
 #' @return  A \code{spatialPixelsDataFrame}
 #' @importFrom methods as
+#' @examples
+#' \donttest{
+#' data(dat,square,square_pop)
+#' lg1 <- lgcp(data=dat,
+#'             pop.var = c("popdens"),
+#'             boundary=square,
+#'             covariates=square_pop,
+#'             cellwidth=0.1,
+#'             laglength = 7,
+#'             mala.pars=c(200,100,1),
+#'             nchains=2)
+#' plot_hotspot_data(lg1,
+#'              covariates = square_pop,
+#'              threshold.var = c("poppp+obs+latent"),
+#'              threshold.value = 1,
+#'              threshold.prob=0.8,
+#'              labels=c('low','high incidence'))
+#' }
 #' @export
 plot_hotspot_data <- function(lg,
                               covariates,

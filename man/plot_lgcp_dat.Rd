@@ -36,6 +36,10 @@ plot_lgcp_dat(
 \item{data.out}{Logical indicating whether to return data frame with only
 plotting data (FALSE) or a list containing each predicted model subcomponent (TRUE)}
 }
+\value{
+A data.frame with model predictions across the computation grid used in the plotting
+functions in this package.
+}
 \description{
 Helper function to create plotting data from an lgcpReal object
 }

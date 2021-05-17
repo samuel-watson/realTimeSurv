@@ -21,6 +21,18 @@
 #' @return A list: (1) simulated data for each computational grid cell, (2) simulated case locations and time, (3) plot
 #' of Poisson intensity, (4) plot of simulated case locations, (5) stpp object of case locations for use with stpp functions.
 #' @importFrom stats rpois runif
+#' @examples
+#' data(square,square_pop)
+#' infecSim(region = square,
+#'          t.win = c(1,10),
+#'          covariates = square_pop,
+#'          mean.val= 100,
+#'          p =1/100,
+#'          delta = c(0.01,4),
+#'          rho=3,
+#'          t.off = 4,
+#'          cov.pars = c(0.9,0.03,0.1),
+#'          grid.size = 64^2)
 #' @export
 infecSim <- function(region,
                      t.win,

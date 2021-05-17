@@ -11,6 +11,9 @@
 
 \item{...}{...}
 }
+\value{
+A string summarising the model
+}
 \description{
 Print function for lgcpReal
 }
