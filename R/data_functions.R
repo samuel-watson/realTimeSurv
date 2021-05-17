@@ -352,12 +352,10 @@ plot_data <- function(lg,
 #'             nchains=2)
 #' plot_hotspot_data(lg1,
 #'              covariates = square_pop,
-#'              threshold.var = c("poppp+obs+latent",
-#'                                "poppp+obs+latent+lag(3)"),
-#'              threshold.value = c(0.1,1),
+#'              threshold.var = c("poppp+obs+latent"),
+#'              threshold.value = 1,
 #'              threshold.prob=0.8,
-#'              labels=c('low','high incidence',
-#'                       'rising incidence','both'))
+#'              labels=c('low','high incidence'))
 #' }
 #' @export
 plot_hotspot_data <- function(lg,

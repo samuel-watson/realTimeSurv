@@ -56,7 +56,7 @@ lg1 <- lgcp(data=dat,
             laglength = 7,
             mala.pars=c(200,100,1),
             nchains=2)
-plot_data(lg1,square_pop,change.lag=7)
+plot_data(lg1,square_pop)
 }
 }
 \seealso{
