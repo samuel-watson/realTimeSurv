@@ -862,8 +862,13 @@ summary.lgcpReal <- function(object,
     output <- exp(rbind(ans,ans.eta))
   }
 
-  conv.res <- convergence(object,plots=FALSE)
-  output <- cbind(output,conv.res)
+  if(nrow(object$lgcpRunInfo$timetaken)>1){
+    conv.res <- convergence(object,plots=FALSE)
+    output <- cbind(output,conv.res)
+  } else {
+    message("Convergence diagnostics skipped as only one chain.")
+  }
+
 
     ans.prior <- do.call(data.frame,
                          list(

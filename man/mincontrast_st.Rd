@@ -4,7 +4,7 @@
 \alias{mincontrast_st}
 \title{Minimum constrast spatio-temporal estimation}
 \usage{
-mincontrast_st(data, covariates, boundary, pop.var = "popdens")
+mincontrast_st(data, covariates, boundary, pop.var = "popdens", verbose = TRUE)
 }
 \arguments{
 \item{data}{A data frame consisting of columns \code{x}, \code{y}, and \code{t}, which are two
@@ -16,6 +16,8 @@ population density column named \code{popdens}}
 \item{boundary}{A \code{spatialPolygonsDataFrame} of the boundary of the area of interest.}
 
 \item{pop.var}{Name of the population density variable}
+
+\item{verbose}{Logical indicating whether to provide progress bars}
 }
 \value{
 Returned values are the minimum contrast estimates of phi, sigma^2 and theta,

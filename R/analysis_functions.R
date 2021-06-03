@@ -411,6 +411,7 @@ lgcpST <- function (formula, xyt, T, laglength, ZmatList = NULL, model.priors,
 #' population density column named \code{popdens}
 #' @param boundary A \code{spatialPolygonsDataFrame} of the boundary of the area of interest.
 #' @param pop.var Name of the population density variable
+#' @param verbose Logical indicating whether to provide progress bars
 #' @return Returned values are the minimum contrast estimates of phi, sigma^2 and theta,
 #' as well as the overall squared discrepancy between the parametric and nonparametric forms
 #' of the spatial function used corresponding to these estimates.
@@ -419,7 +420,8 @@ lgcpST <- function (formula, xyt, T, laglength, ZmatList = NULL, model.priors,
 mincontrast_st <- function(data,
                            covariates,
                            boundary,
-                           pop.var = "popdens"){
+                           pop.var = "popdens",
+                           verbose=TRUE){
   if(!is(data,"data.frame")|any(!colnames(data)%in%c('x','y','t')))stop("Data needs to be a data frame with columns x,y, and t")
   if(!is(boundary,"SpatialPolygonsDataFrame"))stop("Boundary needs to be of class SpatialPolygonsDataFrame")
   if(!is.null(covariates)&!is(covariates,"SpatialPolygonsDataFrame"))stop("Covariates needs to be of class SpatialPolygonsDataFrame")
@@ -442,12 +444,14 @@ mincontrast_st <- function(data,
     vars.est <- suppressWarnings(lgcp::minimum.contrast.spatiotemporal(data=xyt,
                                                       model="exponential",
                                                       spatial.dens = pop,
-                                                      temporal.intens = lgcp::muEst(xyt)))
+                                                      temporal.intens = lgcp::muEst(xyt),
+                                                      verbose = verbose))
   } else {
     xyt <- lgcp::stppp(list(data = data, tlim = range(data$t), window = win))
     vars.est <- suppressWarnings(lgcp::minimum.contrast.spatiotemporal(data=xyt,
                                                       model="exponential",
-                                                      temporal.intens = lgcp::muEst(xyt)))
+                                                      temporal.intens = lgcp::muEst(xyt),
+                                                      verbose=verbose))
   }
 
 
@@ -712,46 +716,77 @@ lgcp <- function(data,
     dir1 <- dirname
   }
 
-  cl <- parallel::makeCluster(nchains)
-  if(!is.null(lib)){
-    parallel::clusterExport(cl,c('lib'),envir = environment())
-    parallel::clusterEvalQ(cl,.libPaths(lib))
-  }
-  #parallel::clusterEvalQ(cl,library(realTimeSurv))
-  parallel::clusterEvalQ(cl,library(lgcp))
-  parallel::clusterCall(cl, assign, "lgcpST", lgcpST, envir = .GlobalEnv)
-  #parallel::clusterCall(cl, requireNamespace("lgcp"))
-
-  parallel::clusterExport(cl,c('form','xyt','T','laglength','Zmat','priors','INITS',
-                     'CF','cellwidth','dir1','mala.pars',"offsetList"),
-                envir = environment())
-
   pbapply::pboptions(type="none")
-  lg.out <- pbapply::pbsapply(1:nchains,function(i)lgcpST(formula = form,
-                                           xyt = xyt,
-                                           T = T,
-                                           laglength = laglength-1,
-                                           ZmatList = Zmat,
-                                           poisson.offset = offsetList,
-                                           model.priors = priors,
-                                           model.inits = INITS,
-                                           spatial.covmodel = CF,
-                                           cellwidth = cellwidth,
-                                           mcmc.control = lgcp::mcmcpars(mala.length = mala.pars[1],
-                                                                   burnin = mala.pars[2],
-                                                                   retain = mala.pars[3],
-                                                                   adaptivescheme = lgcp::andrieuthomsh(inith = 1,
-                                                                                                  alpha = 0.5,
-                                                                                                  C = 1,
-                                                                                                  targetacceptance = 0.574)),
-                                           output.control = lgcp::setoutput(gridfunction =
-                                                                        lgcp::dump2dir(dirname = file.path(paste0(dir1,".",i)),
-                                                                                 lastonly = F,
-                                                                                 forceSave = TRUE)),
-                                           ext = 2),
-                     cl = cl)
+
+  if(nchains > 1){
+    cl <- parallel::makeCluster(nchains)
+    if(!is.null(lib)){
+      parallel::clusterExport(cl,c('lib'),envir = environment())
+      parallel::clusterEvalQ(cl,.libPaths(lib))
+    }
+    #parallel::clusterEvalQ(cl,library(realTimeSurv))
+    parallel::clusterEvalQ(cl,library(lgcp))
+    parallel::clusterCall(cl, assign, "lgcpST", lgcpST, envir = .GlobalEnv)
+    #parallel::clusterCall(cl, requireNamespace("lgcp"))
+
+    parallel::clusterExport(cl,c('form','xyt','T','laglength','Zmat','priors','INITS',
+                                 'CF','cellwidth','dir1','mala.pars',"offsetList"),
+                            envir = environment())
+
+    lg.out <- pbapply::pbsapply(1:nchains,function(i)lgcpST(formula = form,
+                                                            xyt = xyt,
+                                                            T = T,
+                                                            laglength = laglength-1,
+                                                            ZmatList = Zmat,
+                                                            poisson.offset = offsetList,
+                                                            model.priors = priors,
+                                                            model.inits = INITS,
+                                                            spatial.covmodel = CF,
+                                                            cellwidth = cellwidth,
+                                                            mcmc.control = lgcp::mcmcpars(mala.length = mala.pars[1],
+                                                                                          burnin = mala.pars[2],
+                                                                                          retain = mala.pars[3],
+                                                                                          adaptivescheme = lgcp::andrieuthomsh(inith = 1,
+                                                                                                                               alpha = 0.5,
+                                                                                                                               C = 1,
+                                                                                                                               targetacceptance = 0.574)),
+                                                            output.control = lgcp::setoutput(gridfunction =
+                                                                                               lgcp::dump2dir(dirname = file.path(paste0(dir1,".",i)),
+                                                                                                              lastonly = F,
+                                                                                                              forceSave = TRUE)),
+                                                            ext = 2),
+                                cl = cl)
+    parallel::stopCluster(cl)
+  } else {
+    lg.out <- pbapply::pbsapply(1:nchains,function(i)lgcpST(formula = form,
+                                                            xyt = xyt,
+                                                            T = T,
+                                                            laglength = laglength-1,
+                                                            ZmatList = Zmat,
+                                                            poisson.offset = offsetList,
+                                                            model.priors = priors,
+                                                            model.inits = INITS,
+                                                            spatial.covmodel = CF,
+                                                            cellwidth = cellwidth,
+                                                            mcmc.control = lgcp::mcmcpars(mala.length = mala.pars[1],
+                                                                                          burnin = mala.pars[2],
+                                                                                          retain = mala.pars[3],
+                                                                                          adaptivescheme = lgcp::andrieuthomsh(inith = 1,
+                                                                                                                               alpha = 0.5,
+                                                                                                                               C = 1,
+                                                                                                                               targetacceptance = 0.574)),
+                                                            output.control = lgcp::setoutput(gridfunction =
+                                                                                               lgcp::dump2dir(dirname = file.path(paste0(dir1,".",i)),
+                                                                                                              lastonly = F,
+                                                                                                              forceSave = TRUE)),
+                                                            ext = 2))
+  }
+
+
+
+
   message("\nSampling complete at: ",Sys.time())
-  parallel::stopCluster(cl)
+
 
   if(is(lg.out,"matrix")){
     eta <- do.call(rbind,lapply(1:nchains,function(i)return(lg.out[,i]$etarec)))

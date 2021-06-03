@@ -1,5 +1,11 @@
 test_that("data sim works.",{
 
+  quiet <- function(x) {
+    sink(tempfile())
+    on.exit(sink())
+    invisible(force(x))
+  }
+
   data(dat,square,square_pop)
 
   expect_s3_class(dat,"data.frame")
@@ -10,14 +16,14 @@ test_that("data sim works.",{
 
   expect_type(mintest,"double")
 
-  lg1 <- lgcp(data=dat,
+  lg1 <- quiet(suppressWarnings(lgcp(data=dat,
               pop.var = c("popdens"),
               boundary=square,
               covariates=square_pop,
               cellwidth=0.1,
               laglength = 7,
               mala.pars=c(200,100,1),
-              nchains=2)
+              nchains=1)))
 
   expect_s3_class(lg1,"lgcpReal")
 
