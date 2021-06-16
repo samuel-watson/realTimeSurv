@@ -1,6 +1,6 @@
 Package: realTimeSurv
 Title: Real Time Disease Surveillance Using Geospatial Statistical Modelling
-Version: 1.0
+Version: 1.1
 Authors@R: 
     person(given = "Sam",
            family = "Watson",
